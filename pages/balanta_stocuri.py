@@ -12,10 +12,10 @@ from utils.data_loaders import load_balanta_la_data, load_balanta_perioada
 st.markdown("### 📦 Balanță Stocuri")
 
 # Tabs pentru subcategoriile Balanță Stocuri
-tab1, tab2 = st.tabs(["📅 La Data", "📊 Perioadă"])
+tab1, tab2 = st.tabs(["📅 În Dată", "📊 Perioadă"])
 
 with tab1:
-    st.markdown("#### 📅 Balanță Stocuri la Data")
+    st.markdown("#### 📅 Balanță Stocuri la Dată")
     
     # Încărcare date
     balanta_df = load_balanta_la_data()
@@ -103,8 +103,6 @@ with tab1:
         with col2:
             valoare_vanzare_filtrata = filtered_balanta['ValoareVanzare'].sum() if 'ValoareVanzare' in filtered_balanta.columns else 0
             st.metric("Total Valoare Vânzare Filtrată", f"{valoare_vanzare_filtrata:,.0f} RON")
-
-
     
     # Donut Chart pentru stocuri pe gestiuni (doar când se filtrează după produs)
     if produs_filter and 'Stoc final' in filtered_balanta.columns and 'DenumireGest' in filtered_balanta.columns:
@@ -123,9 +121,10 @@ with tab1:
                 labels=stoc_pe_gestiune['DenumireGest'],
                 values=stoc_pe_gestiune['Stoc final'],
                 hole=0.4,  # Crează gaura din mijloc pentru donut
-                textinfo='label+percent',
+                textinfo='label+value',
+                texttemplate='%{label}<br>%{value} buc',
                 textposition='outside',
-                hovertemplate='<b>%{label}</b><br>Stoc: %{value} buc<br>Procent: %{percent}<extra></extra>'
+                hovertemplate='<b>%{label}</b><br>Stoc: %{value} buc<extra></extra>'
             )])
             
             # Adăugare text în centru cu totalul
@@ -155,10 +154,6 @@ with tab1:
             st.plotly_chart(fig, use_container_width=True)
         else:
             st.info("Nu există date de stoc pentru produsele filtrate.")
-
-
-
-
 
 with tab2:
     st.markdown("#### 📊 Balanță Stocuri pe Perioadă")
