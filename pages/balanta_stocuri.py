@@ -12,10 +12,10 @@ from utils.data_loaders import load_balanta_la_data, load_balanta_perioada
 st.markdown("### 📦 Balanță Stocuri")
 
 # Tabs pentru subcategoriile Balanță Stocuri
-tab1, tab2 = st.tabs(["📅 În Dată", "📊 Perioadă"])
+tab1, tab2 = st.tabs(["📅 La Data", "📊 Perioadă"])
 
 with tab1:
-    st.markdown("#### 📅 Balanță Stocuri la Dată")
+    st.markdown("#### 📅 Balanță Stocuri la Data")
     
     # Încărcare date
     balanta_df = load_balanta_la_data()
@@ -28,9 +28,9 @@ with tab1:
     col1, col2 = st.columns(2)
     
     with col1:
-        st.metric("Total Valoare Stoc Final", f"{total_valoare_stoc_final:,.0f} RON")
+        st.metric("Total Valoare Stoc", f"{total_valoare_stoc_final:,.2f} RON")
     with col2:
-        st.metric("Total Valoare Vânzare", f"{total_valoare_vanzare:,.0f} RON")
+        st.metric("Total Valoare Vânzare", f"{total_valoare_vanzare:,.2f} RON")
     
     st.markdown("---")
     
@@ -99,10 +99,10 @@ with tab1:
         
         with col1:
             valoare_stoc_filtrata = filtered_balanta['ValoareStocFinal'].sum() if 'ValoareStocFinal' in filtered_balanta.columns else 0
-            st.metric("Total Valoare Stoc Final Filtrată", f"{valoare_stoc_filtrata:,.0f} RON")
+            st.metric("Total Valoare Stoc", f"{valoare_stoc_filtrata:,.2f} RON")
         with col2:
             valoare_vanzare_filtrata = filtered_balanta['ValoareVanzare'].sum() if 'ValoareVanzare' in filtered_balanta.columns else 0
-            st.metric("Total Valoare Vânzare Filtrată", f"{valoare_vanzare_filtrata:,.0f} RON")
+            st.metric("Total Valoare Vânzare", f"{valoare_vanzare_filtrata:,.2f} RON")
     
     # Donut Chart pentru stocuri pe gestiuni (doar când se filtrează după produs)
     if produs_filter and 'Stoc final' in filtered_balanta.columns and 'DenumireGest' in filtered_balanta.columns:
@@ -129,7 +129,7 @@ with tab1:
             
             # Adăugare text în centru cu totalul
             fig.add_annotation(
-                text=f"<b>Total Stoc<br>{total_stoc:,.0f} buc</b>",
+                text=f"<b>Total Stoc<br>{total_stoc:,.2f} buc</b>",
                 x=0.5, y=0.5,
                 font_size=16,
                 showarrow=False
