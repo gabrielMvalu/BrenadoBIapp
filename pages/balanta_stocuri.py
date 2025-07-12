@@ -32,8 +32,9 @@ with tab1:
     
     st.markdown("---")
     
-    # Filtrare date
+    # Filtrare date - INTERDEPENDENTE
     col1, col2, col3 = st.columns(3)
+    
     with col1:
         if 'DenumireGest' in balanta_df.columns:
             gestiune_filter = st.multiselect(
@@ -43,20 +44,34 @@ with tab1:
                 key="gestiune_filter_tab1"
             )
     
+    # Filtrare pentru grupa bazată pe gestiunea selectată
+    df_for_grupa = balanta_df.copy()
+    if 'DenumireGest' in balanta_df.columns and gestiune_filter:
+        df_for_grupa = df_for_grupa[df_for_grupa['DenumireGest'].isin(gestiune_filter)]
+    
     with col2:
         if 'Grupa' in balanta_df.columns:
+            # Afișează doar grupele din gestiunile selectate
+            grupa_options = df_for_grupa['Grupa'].unique() if not df_for_grupa.empty else []
             grupa_filter = st.multiselect(
                 "Filtrează după grupă:",
-                options=balanta_df['Grupa'].unique(),
+                options=grupa_options,
                 default=[],
                 key="grupa_filter_tab1"
             )
     
+    # Filtrare pentru produs bazată pe gestiunea și grupa selectate
+    df_for_produs = df_for_grupa.copy()
+    if 'Grupa' in balanta_df.columns and grupa_filter:
+        df_for_produs = df_for_produs[df_for_produs['Grupa'].isin(grupa_filter)]
+    
     with col3:
         if 'Denumire' in balanta_df.columns:
+            # Afișează doar produsele din gestiunile și grupele selectate
+            produs_options = df_for_produs['Denumire'].unique() if not df_for_produs.empty else []
             produs_filter = st.multiselect(
                 "Filtrează după produs:",
-                options=balanta_df['Denumire'].unique(),
+                options=produs_options,
                 default=[],
                 key="produs_filter_tab1"
             )
