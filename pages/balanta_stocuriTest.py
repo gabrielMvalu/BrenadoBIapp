@@ -345,6 +345,11 @@ with tab3:
             'ValoareStocFinal': 'sum',
             'ValoareVanzare': 'sum'
         }).reset_index()
+        
+        # Rotunjirea valorilor pentru afișare
+        gestiuni_summary['ValoareStocFinal'] = gestiuni_summary['ValoareStocFinal'].round(0).astype(int)
+        gestiuni_summary['ValoareVanzare'] = gestiuni_summary['ValoareVanzare'].round(0).astype(int)
+        
         gestiuni_summary.columns = ['Gestiune', 'Valoare Stoc Final', 'Valoare Vânzare']
         gestiuni_summary = gestiuni_summary.sort_values('Valoare Stoc Final', ascending=False)
         
