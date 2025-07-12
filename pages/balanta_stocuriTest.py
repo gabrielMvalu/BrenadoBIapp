@@ -256,20 +256,9 @@ with tab3:
         with col2:
             st.metric("Total Valoare Vânzare", f"{total_valoare_vanzare_general:,.0f} RON")
         
-        # Verificare și debug pentru grupele din fiecare gestiune
-        st.markdown("#### 🔍 Debug Info - Grupe pe Gestiuni")
-        debug_grupe = analiza_df.groupby(['DenumireGest', 'Grupa']).agg({
-            'ValoareStocFinal': 'sum',
-            'ValoareVanzare': 'sum'
-        }).reset_index()
-        
-        for gestiune in analiza_df['DenumireGest'].unique():
-            grupe_gestiune = debug_grupe[debug_grupe['DenumireGest'] == gestiune]
-            st.write(f"**{gestiune}**: {len(grupe_gestiune)} grupe - {list(grupe_gestiune['Grupa'].values)}")
-        
         st.markdown("---")
         
-        # Vizualizare Sunburst unificat cu ambele valori - CORECTAT
+        # Vizualizare Sunburst unificat cu ambele valori
         st.markdown("#### 🌟 Vizualizare Sunburst Unificat")
         
         # Preparare date pentru Sunburst unificat
@@ -302,19 +291,11 @@ with tab3:
                 'ids': gestiune['DenumireGest']
             })
         
-        # Grupe - VERIFICARE EXPLICITĂ pentru fiecare gestiune
+        # Grupe - cu verificare că toate sunt incluse
         grupe_data = analiza_df.groupby(['DenumireGest', 'Grupa']).agg({
             'ValoareStocFinal': 'sum',
             'ValoareVanzare': 'sum'
         }).reset_index()
-        
-        # Verificare dacă toate gestiunile au grupe
-        st.write("**Debug - Grupe găsite:**")
-        for gestiune_name in gestiuni_data['DenumireGest']:
-            grupe_din_gestiune = grupe_data[grupe_data['DenumireGest'] == gestiune_name]
-            st.write(f"- {gestiune_name}: {len(grupe_din_gestiune)} grupe")
-            for _, grupa in grupe_din_gestiune.iterrows():
-                st.write(f"  * {grupa['Grupa']}: Stoc={grupa['ValoareStocFinal']:,.0f}, Vânzare={grupa['ValoareVanzare']:,.0f}")
         
         # Adăugare grupe în sunburst_data
         for _, grupa in grupe_data.iterrows():
@@ -326,40 +307,33 @@ with tab3:
                 'ids': f"{grupa['DenumireGest']}-{grupa['Grupa']}"
             })
         
-        # Afișare structura finală pentru debugging
-        st.write("**Debug - Structura finală sunburst_data:**")
-        for item in sunburst_data:
-            st.write(f"- {item['names']} (parent: {item['parents']}) = Stoc: {item['values']:,.0f}")
-        
         # Conversie la DataFrame
         df_sunburst = pd.DataFrame(sunburst_data)
         
-        # Crearea chart-ului unificat cu plotly.express
-        fig = px.sunburst(
-            df_sunburst,
-            names='names',
-            parents='parents',
-            values='values'
-        )
-        
-        # Actualizare cu textul personalizat pentru a afișa ambele valori
-        fig.update_traces(
+        # Crearea chart-ului unificat cu go.Figure pentru control complet
+        fig = go.Figure(go.Sunburst(
+            labels=df_sunburst['names'],
+            parents=df_sunburst['parents'],
+            values=df_sunburst['values'],
+            customdata=df_sunburst['vanzare'],
+            branchvalues="total",
+            maxdepth=3,  # Forțează afișarea a toate 3 nivelurile
             textinfo="label",
             texttemplate="<b>%{label}</b><br>Stoc: %{value:,.0f}<br>Vânzare: %{customdata:,.0f}",
-            customdata=df_sunburst['vanzare'],
             hovertemplate='<b>%{label}</b><br>' +
                          'Stoc Final: %{value:,.0f} RON<br>' +
                          'Vânzare: %{customdata:,.0f} RON<extra></extra>',
-            branchvalues="total"
-        )
+            textfont_size=9,  # Font mai mic pentru a încăpea tot textul
+            insidetextorientation='radial'  # Orientare text pentru mai mult spațiu
+        ))
         
-        # Layout simplu și curat
+        # Layout optimizat pentru afișarea tuturor grupelor
         fig.update_layout(
-            height=600,
+            height=700,  # Mai înalt pentru mai mult spațiu
             title="Analiză Completă Stocuri: Brenado For House → Gestiuni → Grupe",
             title_x=0.5,
-            font_size=11,
-            margin=dict(t=50, l=20, r=20, b=20)
+            font_size=10,
+            margin=dict(t=60, l=30, r=30, b=30)
         )
         
         st.plotly_chart(fig, use_container_width=True)
