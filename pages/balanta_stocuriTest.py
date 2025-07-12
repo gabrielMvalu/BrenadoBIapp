@@ -140,7 +140,7 @@ with tab1:
             
             # Adăugare text în centru cu totalul - DINAMIC
             fig.add_annotation(
-                text=f"<b>Stoc {nume_produs}<br>{total_stoc:,.0f} {um_produs}</b>",
+                text=f"<b>Stoc total:<br>{total_stoc:,.0f} {um_produs}</b>",
                 x=0.5, y=0.5,
                 font_size=16,
                 showarrow=False
