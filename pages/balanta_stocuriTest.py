@@ -258,125 +258,86 @@ with tab3:
         
         st.markdown("---")
         
-        # Verificare dacă putem face un chart combinat sau trebuie separate
-        st.markdown("#### 🌟 Vizualizare Sunburst - Gestiuni → Grupe")
+        # Vizualizare Sunburst unificat cu ambele valori
+        st.markdown("#### 🌟 Vizualizare Sunburst Unificat")
         
-        # Preparare date pentru Sunburst
+        # Preparare date pentru Sunburst unificat
+        import pandas as pd
+        
+        # Construire date în format pentru px.sunburst
+        sunburst_data = []
+        
+        # Root - Company
+        sunburst_data.append({
+            'names': 'Brenado For House',
+            'parents': '',
+            'values': total_valoare_stoc_general,
+            'vanzare': total_valoare_vanzare_general,
+            'ids': 'root'
+        })
+        
+        # Gestiuni
         gestiuni_data = analiza_df.groupby('DenumireGest').agg({
             'ValoareStocFinal': 'sum',
             'ValoareVanzare': 'sum'
         }).reset_index()
         
+        for _, gestiune in gestiuni_data.iterrows():
+            sunburst_data.append({
+                'names': gestiune['DenumireGest'],
+                'parents': 'Brenado For House',
+                'values': gestiune['ValoareStocFinal'],
+                'vanzare': gestiune['ValoareVanzare'],
+                'ids': gestiune['DenumireGest']
+            })
+        
+        # Grupe
         grupe_data = analiza_df.groupby(['DenumireGest', 'Grupa']).agg({
             'ValoareStocFinal': 'sum',
             'ValoareVanzare': 'sum'
         }).reset_index()
         
-        # Definire culori pentru gestiuni și gradiente pentru grupe
-        gestiuni_colors = {
-            gestiuni_data.iloc[0]['DenumireGest']: '#1f77b4',  # Albastru
-            gestiuni_data.iloc[1]['DenumireGest']: '#ff7f0e' if len(gestiuni_data) > 1 else '#1f77b4',  # Portocaliu
-            gestiuni_data.iloc[2]['DenumireGest']: '#2ca02c' if len(gestiuni_data) > 2 else '#1f77b4'   # Verde
-        }
+        for _, grupa in grupe_data.iterrows():
+            sunburst_data.append({
+                'names': grupa['Grupa'],
+                'parents': grupa['DenumireGest'],
+                'values': grupa['ValoareStocFinal'],
+                'vanzare': grupa['ValoareVanzare'],
+                'ids': f"{grupa['DenumireGest']}-{grupa['Grupa']}"
+            })
         
-        # Funcție pentru generarea culorilor
-        def generate_colors_with_gradients(gestiuni_data, grupe_data, gestiuni_colors):
-            colors = ['#8B4513']  # Maro pentru TOTAL
-            
-            # Culori pentru gestiuni
-            for _, gestiune in gestiuni_data.iterrows():
-                colors.append(gestiuni_colors[gestiune['DenumireGest']])
-            
-            # Culori gradient pentru grupe
-            import matplotlib.colors as mcolors
-            for _, gestiune in gestiuni_data.iterrows():
-                gestiune_name = gestiune['DenumireGest']
-                grupe_gestiune = grupe_data[grupe_data['DenumireGest'] == gestiune_name]
-                base_color = gestiuni_colors[gestiune_name]
-                
-                # Crearea gradientului pentru grupe
-                n_grupe = len(grupe_gestiune)
-                if n_grupe > 1:
-                    # Gradient de la culoarea de bază la o variantă mai deschisă
-                    base_rgb = mcolors.hex2color(base_color)
-                    for i in range(n_grupe):
-                        # Factor de gradient (0.4 la 1.0 pentru varietate)
-                        factor = 0.4 + (0.6 * i / (n_grupe - 1))
-                        gradient_rgb = tuple(min(1.0, c * factor + (1 - factor) * 0.9) for c in base_rgb)
-                        gradient_hex = mcolors.rgb2hex(gradient_rgb)
-                        colors.append(gradient_hex)
-                else:
-                    # O singură grupă, folosește o variantă mai deschisă
-                    base_rgb = mcolors.hex2color(base_color)
-                    gradient_rgb = tuple(min(1.0, c * 0.7 + 0.3) for c in base_rgb)
-                    colors.append(mcolors.rgb2hex(gradient_rgb))
-            
-            return colors
+        # Conversie la DataFrame
+        df_sunburst = pd.DataFrame(sunburst_data)
         
-        # Să facem două chart-uri paralele pentru claritate maximă
-        col1, col2 = st.columns(2)
+        # Crearea chart-ului unificat cu plotly.express
+        fig = px.sunburst(
+            df_sunburst,
+            names='names',
+            parents='parents',
+            values='values'
+        )
         
-        with col1:
-            st.markdown("##### 📦 Stoc Final")
-            
-            # Construire date pentru Sunburst Stoc Final
-            labels_stoc = ["TOTAL"] + list(gestiuni_data['DenumireGest']) + list(grupe_data['Grupa'])
-            parents_stoc = [""] + ["TOTAL"] * len(gestiuni_data) + list(grupe_data['DenumireGest'])
-            values_stoc = [total_valoare_stoc_general] + list(gestiuni_data['ValoareStocFinal']) + list(grupe_data['ValoareStocFinal'])
-            
-            # Generare culori cu gradient
-            colors_stoc = generate_colors_with_gradients(gestiuni_data, grupe_data, gestiuni_colors)
-            
-            fig_stoc = go.Figure(go.Sunburst(
-                labels=labels_stoc,
-                parents=parents_stoc,
-                values=values_stoc,
-                branchvalues="total",
-                hovertemplate='<b>%{label}</b><br>Stoc Final: %{value:,.0f} RON<extra></extra>',
-                textinfo="label+value",
-                texttemplate="<b>%{label}</b><br>%{value:,.0f} RON",
-                marker=dict(colors=colors_stoc, line=dict(color="white", width=2))
-            ))
-            
-            fig_stoc.update_layout(
-                margin=dict(t=10, l=10, r=10, b=10),
-                height=500,
-                title="Distribuția Stoc Final",
-                font_size=10
-            )
-            
-            st.plotly_chart(fig_stoc, use_container_width=True)
+        # Actualizare cu textul personalizat pentru a afișa ambele valori
+        fig.update_traces(
+            textinfo="label",
+            texttemplate="<b>%{label}</b><br>Stoc: %{value:,.0f}<br>Vânzare: %{customdata:,.0f}",
+            customdata=df_sunburst['vanzare'],
+            hovertemplate='<b>%{label}</b><br>' +
+                         'Stoc Final: %{value:,.0f} RON<br>' +
+                         'Vânzare: %{customdata:,.0f} RON<extra></extra>',
+            branchvalues="total"
+        )
         
-        with col2:
-            st.markdown("##### 💰 Valoare Vânzare")
-            
-            # Construire date pentru Sunburst Vânzare
-            labels_vanzare = ["TOTAL"] + list(gestiuni_data['DenumireGest']) + list(grupe_data['Grupa'])
-            parents_vanzare = [""] + ["TOTAL"] * len(gestiuni_data) + list(grupe_data['DenumireGest'])
-            values_vanzare = [total_valoare_vanzare_general] + list(gestiuni_data['ValoareVanzare']) + list(grupe_data['ValoareVanzare'])
-            
-            # Același set de culori pentru consistență vizuală
-            colors_vanzare = generate_colors_with_gradients(gestiuni_data, grupe_data, gestiuni_colors)
-            
-            fig_vanzare = go.Figure(go.Sunburst(
-                labels=labels_vanzare,
-                parents=parents_vanzare,
-                values=values_vanzare,
-                branchvalues="total",
-                hovertemplate='<b>%{label}</b><br>Vânzare: %{value:,.0f} RON<extra></extra>',
-                textinfo="label+value", 
-                texttemplate="<b>%{label}</b><br>%{value:,.0f} RON",
-                marker=dict(colors=colors_vanzare, line=dict(color="white", width=2))
-            ))
-            
-            fig_vanzare.update_layout(
-                margin=dict(t=10, l=10, r=10, b=10),
-                height=500,
-                title="Distribuția Valoare Vânzare",
-                font_size=10
-            )
-            
-            st.plotly_chart(fig_vanzare, use_container_width=True)
+        # Layout simplu și curat
+        fig.update_layout(
+            height=600,
+            title="Analiză Completă Stocuri: Brenado For House → Gestiuni → Grupe",
+            title_x=0.5,
+            font_size=11,
+            margin=dict(t=50, l=20, r=20, b=20)
+        )
+        
+        st.plotly_chart(fig, use_container_width=True)
         
         # Analiză detaliată pe gestiuni cu ambele valori
         st.markdown("#### 📊 Analiză Detaliată pe Gestiuni")
