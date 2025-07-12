@@ -155,6 +155,11 @@ with tab1:
         else:
             st.info("Nu există date de stoc pentru produsele filtrate.")
 
+
+
+
+
+
 with tab2:
     st.markdown("#### 📊 Balanță Stocuri pe Perioadă")
     
