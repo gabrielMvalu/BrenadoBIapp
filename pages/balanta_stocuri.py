@@ -90,8 +90,8 @@ with tab1:
     # Tabel cu date
     st.dataframe(filtered_balanta, use_container_width=True)
     
-    # Statistici pentru datele filtrate
-    if not filtered_balanta.empty:
+   # Statistici pentru datele filtrate (doar când s-au aplicat filtre)
+    if not filtered_balanta.empty and (gestiune_filter or grupa_filter or produs_filter):
         st.markdown("#### 📊 Statistici Date Filtrate")
         col1, col2 = st.columns(2)
         
@@ -101,6 +101,7 @@ with tab1:
         with col2:
             valoare_vanzare_filtrata = filtered_balanta['ValoareVanzare'].sum() if 'ValoareVanzare' in filtered_balanta.columns else 0
             st.metric("Total Valoare Vânzare Filtrată", f"{valoare_vanzare_filtrata:,.0f} RON")
+
 
 with tab2:
     st.markdown("#### 📊 Balanță Stocuri pe Perioadă")
