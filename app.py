@@ -6,19 +6,18 @@ st.set_page_config(
     layout="wide"
 )
 
-# Mesaj de bun venit
-st.title("🏠 Welcome to Brenado For House - Rapoarte")
+# Definirea paginilor cu noua structură st.navigation
+pages = {
+    "Brenado For House": [
+        st.Page("pages/vanzari.py", title="📊 Vânzări"),
+        st.Page("pages/balanta_stocuri.py", title="📦 Balanță Stocuri"),
+        st.Page("pages/cumparari_intrari.py", title="🛒 Cumpărări Intrări"),
+        st.Page("pages/facturi_neincasate.py", title="📥 Facturi Neincasate"),
+        st.Page("pages/facturi_neachitate.py", title="❌ Facturi Neachitate"),
+        st.Page("pages/scadente_plati.py", title="⏰ Scadențe Plăți Cu Efecte"),
+    ],
+}
 
-st.markdown("""
-### Selectează o categorie din sidebar pentru a vizualiza rapoartele:
-
-- **📊 Vânzări** - Analiza vânzărilor pe zile și clienți
-- **📦 Balanță Stocuri** - Situația stocurilor și gestiunilor  
-- **🛒 Cumpărări Intrări** - Rapoarte cumpărări și intrări în stoc
-- **📥 Facturi Neincasate** - Facturi emise neincasate de la clienți
-- **❌ Facturi Neachitate** - Facturi primite neachitate către furnizori
-- **⏰ Scadențe Plăți Cu Efecte** - Monitorizarea scadențelor și efectelor
-""")
-
-st.markdown("---")
-st.caption("Brenado For House - Segmentul Rezidențial")
+# Crearea și rularea navigației
+pg = st.navigation(pages)
+pg.run()
