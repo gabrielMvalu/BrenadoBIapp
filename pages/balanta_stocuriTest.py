@@ -258,85 +258,95 @@ with tab3:
         
         st.markdown("---")
         
-        # Vizualizare Sunburst unificat cu ambele valori
-        st.markdown("#### 🌟 Vizualizare Sunburst Unificat")
+        # Vizualizare Treemap ierarhic cu ambele valori
+        st.markdown("#### 🗂️ Vizualizare Treemap Ierarhic")
         
-        # Preparare date pentru Sunburst unificat
+        # Preparare date pentru Treemap ierarhic
         import pandas as pd
         
-        # Construire date în format pentru px.sunburst
-        sunburst_data = []
+        # Construire date pentru treemap cu path ierarhic
+        treemap_data = []
         
-        # Root - Company
-        sunburst_data.append({
-            'names': 'Brenado For House',
-            'parents': '',
-            'values': total_valoare_stoc_general,
-            'vanzare': total_valoare_vanzare_general,
-            'ids': 'root'
-        })
+        # Grupe - nivelul cel mai detaliat
+        grupe_data = analiza_df.groupby(['DenumireGest', 'Grupa']).agg({
+            'ValoareStocFinal': 'sum',
+            'ValoareVanzare': 'sum'
+        }).reset_index()
         
-        # Gestiuni
+        for _, grupa in grupe_data.iterrows():
+            treemap_data.append({
+                'ids': f"{grupa['DenumireGest']}-{grupa['Grupa']}",
+                'labels': grupa['Grupa'],
+                'parents': grupa['DenumireGest'],
+                'values': grupa['ValoareStocFinal'],
+                'vanzare': grupa['ValoareVanzare'],
+                'niveau': 'grupa'
+            })
+        
+        # Gestiuni - nivelul intermediar
         gestiuni_data = analiza_df.groupby('DenumireGest').agg({
             'ValoareStocFinal': 'sum',
             'ValoareVanzare': 'sum'
         }).reset_index()
         
         for _, gestiune in gestiuni_data.iterrows():
-            sunburst_data.append({
-                'names': gestiune['DenumireGest'],
+            treemap_data.append({
+                'ids': gestiune['DenumireGest'],
+                'labels': gestiune['DenumireGest'],
                 'parents': 'Brenado For House',
                 'values': gestiune['ValoareStocFinal'],
                 'vanzare': gestiune['ValoareVanzare'],
-                'ids': gestiune['DenumireGest']
+                'niveau': 'gestiune'
             })
         
-        # Grupe - cu verificare că toate sunt incluse
-        grupe_data = analiza_df.groupby(['DenumireGest', 'Grupa']).agg({
-            'ValoareStocFinal': 'sum',
-            'ValoareVanzare': 'sum'
-        }).reset_index()
-        
-        # Adăugare grupe în sunburst_data
-        for _, grupa in grupe_data.iterrows():
-            sunburst_data.append({
-                'names': grupa['Grupa'],
-                'parents': grupa['DenumireGest'],
-                'values': grupa['ValoareStocFinal'],
-                'vanzare': grupa['ValoareVanzare'],
-                'ids': f"{grupa['DenumireGest']}-{grupa['Grupa']}"
-            })
+        # Total - root
+        treemap_data.append({
+            'ids': 'Brenado For House',
+            'labels': 'Brenado For House',
+            'parents': '',
+            'values': total_valoare_stoc_general,
+            'vanzare': total_valoare_vanzare_general,
+            'niveau': 'total'
+        })
         
         # Conversie la DataFrame
-        df_sunburst = pd.DataFrame(sunburst_data)
+        df_treemap = pd.DataFrame(treemap_data)
         
-        # Crearea chart-ului unificat cu go.Figure pentru control complet
-        fig = go.Figure(go.Sunburst(
-            labels=df_sunburst['names'],
-            parents=df_sunburst['parents'],
-            values=df_sunburst['values'],
-            customdata=df_sunburst['vanzare'],
+        # Crearea Treemap cu go.Figure pentru control complet
+        fig = go.Figure(go.Treemap(
+            ids=df_treemap['ids'],
+            labels=df_treemap['labels'],
+            parents=df_treemap['parents'],
+            values=df_treemap['values'],
+            customdata=df_treemap['vanzare'],
             branchvalues="total",
-            maxdepth=3,  # Forțează afișarea a toate 3 nivelurile
-            textinfo="label",
+            maxdepth=3,
+            textinfo="label+value",
             texttemplate="<b>%{label}</b><br>Stoc: %{value:,.0f}<br>Vânzare: %{customdata:,.0f}",
             hovertemplate='<b>%{label}</b><br>' +
                          'Stoc Final: %{value:,.0f} RON<br>' +
                          'Vânzare: %{customdata:,.0f} RON<extra></extra>',
-            textfont_size=9,  # Font mai mic pentru a încăpea tot textul
-            insidetextorientation='radial'  # Orientare text pentru mai mult spațiu
+            textposition="middle center",
+            textfont_size=11,
+            pathbar_textfont_size=12,
+            marker_line_width=2,
+            marker_line_color="white"
         ))
         
-        # Layout optimizat pentru afișarea tuturor grupelor
+        # Layout optimizat pentru treemap
         fig.update_layout(
-            height=700,  # Mai înalt pentru mai mult spațiu
-            title="Analiză Completă Stocuri: Brenado For House → Gestiuni → Grupe",
+            height=700,
+            title="Analiză Treemap: Brenado For House → Gestiuni → Grupe",
             title_x=0.5,
-            font_size=10,
-            margin=dict(t=60, l=30, r=30, b=30)
+            font_size=11,
+            margin=dict(t=60, l=10, r=10, b=10)
         )
         
         st.plotly_chart(fig, use_container_width=True)
+        
+        # Informații suplimentare despre navigare
+        st.info("💡 **Navigare:** Click pe gestiune pentru a vedea grupele din acea gestiune. " +
+               "Click pe 'Brenado For House' din bara de sus pentru a reveni la vizualizarea generală.")
         
         # Analiză detaliată pe gestiuni cu ambele valori
         st.markdown("#### 📊 Analiză Detaliată pe Gestiuni")
