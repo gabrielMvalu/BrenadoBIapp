@@ -177,7 +177,11 @@ with tab2:
     
     # Calculare metrici
     total_valoare_intrare = perioada_df['Valoare intrare'].sum() if 'Valoare intrare' in perioada_df.columns else 0
-    total_pret_vanzare = perioada_df['peste 15 zile'].sum() if 'peste 15 zile' in perioada_df.columns else 0
+    # Calculare total preț vânzare = Stoc final × Preț vânzare pentru fiecare produs
+    if 'Stoc final' in perioada_df.columns and 'Pret vanzare' in perioada_df.columns:
+        total_pret_vanzare = (perioada_df['Stoc final'] * perioada_df['Pret vanzare']).sum()
+    else:
+        total_pret_vanzare = 0
     
     # Metrici principale
     col1, col2 = st.columns(2)
@@ -185,7 +189,7 @@ with tab2:
     with col1:
         st.metric("Total Valoare Intrare", f"{total_valoare_intrare:,.0f} RON")
     with col2:
-        st.metric("Total Pret Vanzare", f"{total_pret_vanzare:,.0f} RON")
+        st.metric("Total Preț Vânzare", f"{total_pret_vanzare:,.0f} RON")
     
     st.markdown("---")
     
@@ -253,9 +257,12 @@ with tab2:
             valoare_intrare_filtrata = filtered_perioada['Valoare intrare'].sum() if 'Valoare intrare' in filtered_perioada.columns else 0
             st.metric("Total Valoare Intrare Filtrată", f"{valoare_intrare_filtrata:,.0f} RON")
         with col2:
-            pret_vanzare_filtrat = filtered_perioada['peste 15 zile'].sum() if 'peste 15 zile' in filtered_perioada.columns else 0
-            st.metric("Total Pret Vanzare Filtrat", f"{pret_vanzare_filtrat:,.0f} RON")
-
+            # Calculare total preț vânzare filtrat = Stoc final × Preț vânzare pentru datele filtrate
+            if 'Stoc final' in filtered_perioada.columns and 'Pret vanzare' in filtered_perioada.columns:
+                pret_vanzare_filtrat = (filtered_perioada['Stoc final'] * filtered_perioada['Pret vanzare']).sum()
+            else:
+                pret_vanzare_filtrat = 0
+            st.metric("Total Preț Vânzare Filtrat", f"{pret_vanzare_filtrat:,.0f} RON")
 
 
 
