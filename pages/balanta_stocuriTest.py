@@ -256,9 +256,20 @@ with tab3:
         with col2:
             st.metric("Total Valoare Vânzare", f"{total_valoare_vanzare_general:,.0f} RON")
         
+        # Verificare și debug pentru grupele din fiecare gestiune
+        st.markdown("#### 🔍 Debug Info - Grupe pe Gestiuni")
+        debug_grupe = analiza_df.groupby(['DenumireGest', 'Grupa']).agg({
+            'ValoareStocFinal': 'sum',
+            'ValoareVanzare': 'sum'
+        }).reset_index()
+        
+        for gestiune in analiza_df['DenumireGest'].unique():
+            grupe_gestiune = debug_grupe[debug_grupe['DenumireGest'] == gestiune]
+            st.write(f"**{gestiune}**: {len(grupe_gestiune)} grupe - {list(grupe_gestiune['Grupa'].values)}")
+        
         st.markdown("---")
         
-        # Vizualizare Sunburst unificat cu ambele valori
+        # Vizualizare Sunburst unificat cu ambele valori - CORECTAT
         st.markdown("#### 🌟 Vizualizare Sunburst Unificat")
         
         # Preparare date pentru Sunburst unificat
@@ -291,12 +302,21 @@ with tab3:
                 'ids': gestiune['DenumireGest']
             })
         
-        # Grupe
+        # Grupe - VERIFICARE EXPLICITĂ pentru fiecare gestiune
         grupe_data = analiza_df.groupby(['DenumireGest', 'Grupa']).agg({
             'ValoareStocFinal': 'sum',
             'ValoareVanzare': 'sum'
         }).reset_index()
         
+        # Verificare dacă toate gestiunile au grupe
+        st.write("**Debug - Grupe găsite:**")
+        for gestiune_name in gestiuni_data['DenumireGest']:
+            grupe_din_gestiune = grupe_data[grupe_data['DenumireGest'] == gestiune_name]
+            st.write(f"- {gestiune_name}: {len(grupe_din_gestiune)} grupe")
+            for _, grupa in grupe_din_gestiune.iterrows():
+                st.write(f"  * {grupa['Grupa']}: Stoc={grupa['ValoareStocFinal']:,.0f}, Vânzare={grupa['ValoareVanzare']:,.0f}")
+        
+        # Adăugare grupe în sunburst_data
         for _, grupa in grupe_data.iterrows():
             sunburst_data.append({
                 'names': grupa['Grupa'],
@@ -305,6 +325,11 @@ with tab3:
                 'vanzare': grupa['ValoareVanzare'],
                 'ids': f"{grupa['DenumireGest']}-{grupa['Grupa']}"
             })
+        
+        # Afișare structura finală pentru debugging
+        st.write("**Debug - Structura finală sunburst_data:**")
+        for item in sunburst_data:
+            st.write(f"- {item['names']} (parent: {item['parents']}) = Stoc: {item['values']:,.0f}")
         
         # Conversie la DataFrame
         df_sunburst = pd.DataFrame(sunburst_data)
