@@ -10,31 +10,25 @@ from utils.data_loaders import load_balanta_la_data, load_balanta_perioada
 st.markdown("### 📦 Balanță Stocuri")
 
 # Tabs pentru subcategoriile Balanță Stocuri
-tab1, tab2 = st.tabs(["📅 În Dată", "📊 Perioadă"])
+tab1, tab2 = st.tabs(["📅 În Data", "📊 Perioadă"])
 
 with tab1:
-    st.markdown("#### 📅 Balanță Stocuri la Dată")
+    st.markdown("#### 📅 Balanță Stocuri la Data")
     
     # Încărcare date
     balanta_df = load_balanta_la_data()
     
     # Calculare metrici
-    total_stoc = balanta_df['Stoc final'].sum() if 'Stoc final' in balanta_df.columns else 0
-    valoare_stoc = balanta_df['ValoareStocFinal'].sum() if 'ValoareStocFinal' in balanta_df.columns else 0
-    numar_produse = len(balanta_df)
-    gestiuni_unice = balanta_df['DenumireGest'].nunique() if 'DenumireGest' in balanta_df.columns else 0
+    total_valoare_vanzare = balanta_df['ValoareVanzare'].sum() if 'ValoareVanzare' in balanta_df.columns else 0
+    total_valoare_stoc_final = balanta_df['ValoareStocFinal'].sum() if 'ValoareStocFinal' in balanta_df.columns else 0
     
     # Metrici principale
-    col1, col2, col3, col4 = st.columns(4)
+    col1, col2 = st.columns(2)
     
     with col1:
-        st.metric("Stoc Total", f"{total_stoc:,.0f} buc")
+        st.metric("Total Valoare Vânzare", f"{total_valoare_vanzare:,.0f} RON")
     with col2:
-        st.metric("Valoare Stoc", f"{valoare_stoc:,.0f} RON")
-    with col3:
-        st.metric("Produse în Stoc", f"{numar_produse:,}")
-    with col4:
-        st.metric("Gestiuni", f"{gestiuni_unice}")
+        st.metric("Total Valoare Stoc Final", f"{total_valoare_stoc_final:,.0f} RON")
     
     st.markdown("---")
     
@@ -72,20 +66,14 @@ with tab1:
     # Statistici pentru datele filtrate
     if not filtered_balanta.empty:
         st.markdown("#### 📊 Statistici Date Filtrate")
-        col1, col2, col3, col4 = st.columns(4)
+        col1, col2 = st.columns(2)
         
         with col1:
-            stoc_filtrat = filtered_balanta['Stoc final'].sum() if 'Stoc final' in filtered_balanta.columns else 0
-            st.metric("Stoc Filtrat", f"{stoc_filtrat:,.0f} buc")
+            valoare_vanzare_filtrata = filtered_balanta['ValoareVanzare'].sum() if 'ValoareVanzare' in filtered_balanta.columns else 0
+            st.metric("Total Valoare Vânzare Filtrată", f"{valoare_vanzare_filtrata:,.0f} RON")
         with col2:
-            valoare_filtrata = filtered_balanta['ValoareStocFinal'].sum() if 'ValoareStocFinal' in filtered_balanta.columns else 0
-            st.metric("Valoare Filtrată", f"{valoare_filtrata:,.0f} RON")
-        with col3:
-            produse_filtrate = len(filtered_balanta)
-            st.metric("Produse Filtrate", f"{produse_filtrate:,}")
-        with col4:
-            gestiuni_filtrate = filtered_balanta['DenumireGest'].nunique() if 'DenumireGest' in filtered_balanta.columns else 0
-            st.metric("Gestiuni Filtrate", f"{gestiuni_filtrate}")
+            valoare_stoc_filtrata = filtered_balanta['ValoareStocFinal'].sum() if 'ValoareStocFinal' in filtered_balanta.columns else 0
+            st.metric("Total Valoare Stoc Final Filtrată", f"{valoare_stoc_filtrata:,.0f} RON")
 
 with tab2:
     st.markdown("#### 📊 Balanță Stocuri pe Perioadă")
