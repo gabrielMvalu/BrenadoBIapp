@@ -252,62 +252,72 @@ with tab3:
         
         st.markdown("---")
         
-        # Preparare date pentru treemap - manual pentru toate nivelurile
-        import pandas as pd
+        # Verificare dacă putem face un chart combinat sau trebuie separate
+        st.markdown("#### 🌟 Vizualizare Sunburst - Gestiuni → Grupe")
         
-        # Nivel 3: Grupe (cel mai detaliat)
-        grupe_data = analiza_df.groupby(['DenumireGest', 'Grupa']).agg({
-            'ValoareStocFinal': 'sum',
-            'ValoareVanzare': 'sum'
-        }).reset_index()
-        grupe_data['nivel'] = 'grupa'
-        grupe_data['id'] = grupe_data['DenumireGest'] + ' - ' + grupe_data['Grupa']
-        grupe_data['parent'] = grupe_data['DenumireGest']
-        
-        # Nivel 2: Gestiuni
+        # Preparare date pentru Sunburst
         gestiuni_data = analiza_df.groupby('DenumireGest').agg({
             'ValoareStocFinal': 'sum',
             'ValoareVanzare': 'sum'
         }).reset_index()
-        gestiuni_data['nivel'] = 'gestiune'
-        gestiuni_data['id'] = gestiuni_data['DenumireGest']
-        gestiuni_data['parent'] = 'TOTAL'
-        gestiuni_data['Grupa'] = ''
         
-        # Nivel 1: Total
-        total_data = pd.DataFrame([{
-            'DenumireGest': 'TOTAL',
-            'Grupa': '',
-            'ValoareStocFinal': analiza_df['ValoareStocFinal'].sum(),
-            'ValoareVanzare': analiza_df['ValoareVanzare'].sum(),
-            'nivel': 'total',
-            'id': 'TOTAL',
-            'parent': ''
-        }])
+        grupe_data = analiza_df.groupby(['DenumireGest', 'Grupa']).agg({
+            'ValoareStocFinal': 'sum',
+            'ValoareVanzare': 'sum'
+        }).reset_index()
         
-        # Combinarea datelor pentru treemap manual
-        all_data = pd.concat([total_data, gestiuni_data, grupe_data], ignore_index=True)
+        # Să facem două chart-uri paralele pentru claritate maximă
+        col1, col2 = st.columns(2)
         
-        # Crearea Treemap cu go.Figure pentru control complet
-        fig_treemap = go.Figure(go.Treemap(
-            labels=all_data['id'],
-            parents=all_data['parent'],
-            values=all_data['ValoareStocFinal'],
-            customdata=all_data['ValoareVanzare'],
-            hovertemplate='<b>%{label}</b><br>' +
-                         'Stoc Final: %{value:,.0f} RON<br>' +
-                         'Vânzare: %{customdata:,.0f} RON<extra></extra>',
-            textinfo="label+value",
-            texttemplate='<b>%{label}</b><br>%{value:,.0f} RON'
-        ))
+        with col1:
+            st.markdown("##### 📦 Stoc Final")
+            
+            # Construire date pentru Sunburst Stoc Final
+            labels_stoc = ["TOTAL"] + list(gestiuni_data['DenumireGest']) + list(grupe_data['Grupa'])
+            parents_stoc = [""] + ["TOTAL"] * len(gestiuni_data) + list(grupe_data['DenumireGest'])
+            values_stoc = [total_valoare_stoc_general] + list(gestiuni_data['ValoareStocFinal']) + list(grupe_data['ValoareStocFinal'])
+            
+            fig_stoc = go.Figure(go.Sunburst(
+                labels=labels_stoc,
+                parents=parents_stoc,
+                values=values_stoc,
+                branchvalues="total",
+                hovertemplate='<b>%{label}</b><br>Stoc Final: %{value:,.0f} RON<extra></extra>',
+                marker=dict(colors=['#2E86AB', '#1B998B', '#F18F01', '#C73E1D'] * 20)
+            ))
+            
+            fig_stoc.update_layout(
+                margin=dict(t=10, l=10, r=10, b=10),
+                height=500,
+                title="Distribuția Stoc Final"
+            )
+            
+            st.plotly_chart(fig_stoc, use_container_width=True)
         
-        fig_treemap.update_layout(
-            title="Treemap: Gestiuni → Grupe (Mărime = Stoc Final)",
-            height=600
-        )
-        
-        fig_treemap.update_layout(height=600)
-        st.plotly_chart(fig_treemap, use_container_width=True)
+        with col2:
+            st.markdown("##### 💰 Valoare Vânzare")
+            
+            # Construire date pentru Sunburst Vânzare
+            labels_vanzare = ["TOTAL"] + list(gestiuni_data['DenumireGest']) + list(grupe_data['Grupa'])
+            parents_vanzare = [""] + ["TOTAL"] * len(gestiuni_data) + list(grupe_data['DenumireGest'])
+            values_vanzare = [total_valoare_vanzare_general] + list(gestiuni_data['ValoareVanzare']) + list(grupe_data['ValoareVanzare'])
+            
+            fig_vanzare = go.Figure(go.Sunburst(
+                labels=labels_vanzare,
+                parents=parents_vanzare,
+                values=values_vanzare,
+                branchvalues="total",
+                hovertemplate='<b>%{label}</b><br>Vânzare: %{value:,.0f} RON<extra></extra>',
+                marker=dict(colors=['#A23B72', '#ED6A5A', '#9BC53D', '#592E83'] * 20)
+            ))
+            
+            fig_vanzare.update_layout(
+                margin=dict(t=10, l=10, r=10, b=10),
+                height=500,
+                title="Distribuția Valoare Vânzare"
+            )
+            
+            st.plotly_chart(fig_vanzare, use_container_width=True)
         
         # Analiză detaliată pe gestiuni cu ambele valori
         st.markdown("#### 📊 Analiză Detaliată pe Gestiuni")
