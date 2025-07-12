@@ -10,10 +10,10 @@ from utils.data_loaders import load_balanta_la_data, load_balanta_perioada
 st.markdown("### 📦 Balanță Stocuri")
 
 # Tabs pentru subcategoriile Balanță Stocuri
-tab1, tab2 = st.tabs(["📅 În Dată", "📊 Perioadă"])
+tab1, tab2 = st.tabs(["📅 În Data", "📊 Perioadă"])
 
 with tab1:
-    st.markdown("#### 📅 Balanță Stocuri la Dată")
+    st.markdown("#### 📅 Balanță Stocuri la Data")
     
     # Încărcare date
     balanta_df = load_balanta_la_data()
@@ -33,7 +33,7 @@ with tab1:
     st.markdown("---")
     
     # Filtrare date
-    col1, col2 = st.columns(2)
+    col1, col2, col3 = st.columns(3)
     with col1:
         if 'DenumireGest' in balanta_df.columns:
             gestiune_filter = st.multiselect(
@@ -44,6 +44,15 @@ with tab1:
             )
     
     with col2:
+        if 'Grupa' in balanta_df.columns:
+            grupa_filter = st.multiselect(
+                "Filtrează după grupă:",
+                options=balanta_df['Grupa'].unique(),
+                default=[],
+                key="grupa_filter_tab1"
+            )
+    
+    with col3:
         if 'Denumire' in balanta_df.columns:
             produs_filter = st.multiselect(
                 "Filtrează după produs:",
@@ -57,8 +66,25 @@ with tab1:
     if 'DenumireGest' in balanta_df.columns and gestiune_filter:
         filtered_balanta = filtered_balanta[filtered_balanta['DenumireGest'].isin(gestiune_filter)]
     
+    if 'Grupa' in balanta_df.columns and grupa_filter:
+        filtered_balanta = filtered_balanta[filtered_balanta['Grupa'].isin(grupa_filter)]
+    
     if 'Denumire' in balanta_df.columns and produs_filter:
         filtered_balanta = filtered_balanta[filtered_balanta['Denumire'].isin(produs_filter)]
+    
+    # Afișare total pentru grupa filtrată (doar când filtrul grupa este aplicat)
+    if 'Grupa' in balanta_df.columns and grupa_filter:
+        st.markdown("#### 💰 Total pentru Grupa Filtrată")
+        grupa_valoare_stoc = filtered_balanta['ValoareStocFinal'].sum() if 'ValoareStocFinal' in filtered_balanta.columns else 0
+        grupa_valoare_vanzare = filtered_balanta['ValoareVanzare'].sum() if 'ValoareVanzare' in filtered_balanta.columns else 0
+        
+        col_grupa1, col_grupa2 = st.columns(2)
+        with col_grupa1:
+            st.metric("Total Grupa - Valoare Stoc Final", f"{grupa_valoare_stoc:,.0f} RON")
+        with col_grupa2:
+            st.metric("Total Grupa - Valoare Vânzare", f"{grupa_valoare_vanzare:,.0f} RON")
+        
+        st.markdown("---")
     
     # Tabel cu date
     st.dataframe(filtered_balanta, use_container_width=True)
