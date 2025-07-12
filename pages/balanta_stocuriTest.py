@@ -231,7 +231,7 @@ with tab2:
             st.metric("Vechime Medie", f"{vechime_filtrata:.0f} zile")
 
 with tab3:
-    st.markdown("#### 🔍 Analize Stocuri - Sunburst Interactiv")
+    st.markdown("#### 🔍 Analize Stocuri - Vizualizare Ierarhică")
     
     # Încărcare date pentru analize
     analiza_df = load_balanta_la_data()
@@ -244,103 +244,117 @@ with tab3:
         
         # Metrici generale în partea de sus
         st.markdown("#### 📊 Totaluri Generale")
-        col1, col2 = st.columns(2)
+        col1, col2, col3 = st.columns(3)
         with col1:
             st.metric("Total Valoare Stoc Final", f"{total_valoare_stoc_general:,.0f} RON")
         with col2:
             st.metric("Total Valoare Vânzare", f"{total_valoare_vanzare_general:,.0f} RON")
+        with col3:
+            profit_potential = total_valoare_vanzare_general - total_valoare_stoc_general
+            st.metric("Profit Potențial", f"{profit_potential:,.0f} RON")
         
         st.markdown("---")
         
-        # Funcție pentru construirea datelor ierarhice cu ambele valori
-        def build_hierarchical_dataframe_dual(df, levels, value_column, secondary_column):
-            """Construiește ierarhia pentru Sunburst chart cu 2 valori"""
-            import pandas as pd
-            
-            df_list = []
-            for i, level in enumerate(levels):
-                df_tree = pd.DataFrame(columns=['id', 'parent', 'value', 'secondary'])
-                # Grupare și sumă pentru ambele coloane
-                dfg_value = df.groupby(levels[i:])[value_column].sum().reset_index()
-                dfg_secondary = df.groupby(levels[i:])[secondary_column].sum().reset_index()
-                dfg = dfg_value.merge(dfg_secondary, on=levels[i:])
-                
-                df_tree['id'] = dfg[level].copy()
-                if i < len(levels) - 1:
-                    df_tree['parent'] = dfg[levels[i+1]].copy()
-                else:
-                    df_tree['parent'] = 'total'
-                df_tree['value'] = dfg[value_column]
-                df_tree['secondary'] = dfg[secondary_column]
-                df_list.append(df_tree)
-            
-            # Adăugarea root-ului cu ambele valori
-            total = pd.Series(dict(
-                id='total', 
-                parent='',
-                value=df[value_column].sum(),
-                secondary=df[secondary_column].sum()
-            ), name=0)
-            df_list.append(total)
-            df_all_trees = pd.concat(df_list, ignore_index=True)
-            return df_all_trees
+        # Opțiune 1: Treemap Ierarhic cu ambele valori
+        st.markdown("#### 🗺️ Treemap Ierarhic - Gestiuni → Grupe")
         
-        # Construire date ierarhice cu ambele valori
-        levels = ['Grupa', 'DenumireGest']  # De la mic la mare
-        value_column = 'ValoareStocFinal'   # Pentru mărimea segmentelor
-        secondary_column = 'ValoareVanzare' # Pentru informația secundară
+        # Preparare date pentru treemap
+        treemap_data = analiza_df.groupby(['DenumireGest', 'Grupa']).agg({
+            'ValoareStocFinal': 'sum',
+            'ValoareVanzare': 'sum'
+        }).reset_index()
         
-        # Construire date ierarhice
-        df_hierarchical = build_hierarchical_dataframe_dual(analiza_df, levels, value_column, secondary_column)
+        treemap_data['Profit'] = treemap_data['ValoareVanzare'] - treemap_data['ValoareStocFinal']
+        treemap_data['Label'] = treemap_data['Grupa'] + '<br>' + treemap_data['DenumireGest']
         
-        # Crearea Sunburst chart-ului cu ambele valori dar fără colorscale
-        fig = go.Figure(go.Sunburst(
-            labels=df_hierarchical['id'],
-            parents=df_hierarchical['parent'],
-            values=df_hierarchical['value'],
-            branchvalues='total',
-            marker=dict(
-                colors=['#2E86AB', '#A23B72', '#F18F01', '#C73E1D', '#592E83', '#1B998B', '#ED6A5A', '#9BC53D'] * 50,  # Culori uniforme
-                line=dict(color="#FFFFFF", width=2)
-            ),
-            hovertemplate='<b>%{label}</b><br>' +
-                         'Valoare Stoc Final: %{value:,.0f} RON<br>' +
-                         'Valoare Vânzare: %{customdata:,.0f} RON<extra></extra>',
-            customdata=df_hierarchical['secondary'],
-            maxdepth=2
-        ))
-        
-        # Configurare layout cu annotation transparent în centru
-        fig.update_layout(
-            title="Analiză Combinată - Stoc Final vs Vânzare<br>Gestiune → Grupa",
-            title_x=0.5,
-            height=650,
-            font_size=12,
-            margin=dict(t=100, b=20, r=20, l=20),
-            annotations=[
-                dict(
-                    text=f"<b>TOTALURI</b><br>Stoc Final: {total_valoare_stoc_general:,.0f} RON<br>Vânzare: {total_valoare_vanzare_general:,.0f} RON",
-                    x=0.5, y=0.5,
-                    font_size=12,
-                    showarrow=False,
-                    bgcolor="rgba(255,255,255,0.9)",
-                    bordercolor="rgba(128,128,128,0.5)",
-                    borderwidth=1,
-                    clicktoshow="onout"
-                )
-            ]
+        # Crearea Treemap
+        fig_treemap = px.treemap(
+            treemap_data,
+            path=[px.Constant("TOTAL"), 'DenumireGest', 'Grupa'],
+            values='ValoareStocFinal',
+            color='Profit',
+            color_continuous_scale='RdYlGn',
+            title="Treemap: Mărime=Stoc Final, Culoare=Profit (Vânzare-Stoc)"
         )
         
-        # Afișare grafic
-        st.plotly_chart(fig, use_container_width=True)
+        fig_treemap.update_traces(
+            hovertemplate='<b>%{label}</b><br>' +
+                         'Stoc Final: %{value:,.0f} RON<br>' +
+                         'Vânzare: %{customdata[0]:,.0f} RON<br>' +
+                         'Profit: %{color:,.0f} RON<extra></extra>',
+            customdata=treemap_data[['ValoareVanzare']].values
+        )
         
-        # Analiză detaliată pe gestiuni cu ambele valori
-        st.markdown("#### 📊 Analiză Detaliată pe Gestiuni")
+        fig_treemap.update_layout(height=600)
+        st.plotly_chart(fig_treemap, use_container_width=True)
+        
+        st.markdown("---")
+        
+        # Opțiune 2: Charts separate pentru fiecare gestiune
+        st.markdown("#### 📊 Analiză pe Gestiuni cu Grupe")
+        
+        gestiuni = analiza_df['DenumireGest'].unique()
+        
+        for gestiune in gestiuni:
+            gestiune_data = analiza_df[analiza_df['DenumireGest'] == gestiune]
+            grupe_summary = gestiune_data.groupby('Grupa').agg({
+                'ValoareStocFinal': 'sum',
+                'ValoareVanzare': 'sum'
+            }).reset_index()
+            
+            total_stoc_gestiune = grupe_summary['ValoareStocFinal'].sum()
+            total_vanzare_gestiune = grupe_summary['ValoareVanzare'].sum()
+            profit_gestiune = total_vanzare_gestiune - total_stoc_gestiune
+            
+            with st.expander(f"📦 {gestiune} - Stoc: {total_stoc_gestiune:,.0f} RON | Vânzare: {total_vanzare_gestiune:,.0f} RON | Profit: {profit_gestiune:,.0f} RON"):
+                
+                # Chart pentru grupe din această gestiune
+                fig_bar = go.Figure()
+                
+                fig_bar.add_trace(go.Bar(
+                    name='Stoc Final',
+                    x=grupe_summary['Grupa'],
+                    y=grupe_summary['ValoareStocFinal'],
+                    yaxis='y',
+                    marker_color='lightblue',
+                    hovertemplate='Stoc Final: %{y:,.0f} RON<extra></extra>'
+                ))
+                
+                fig_bar.add_trace(go.Bar(
+                    name='Vânzare',
+                    x=grupe_summary['Grupa'],
+                    y=grupe_summary['ValoareVanzare'],
+                    yaxis='y2',
+                    marker_color='orange',
+                    hovertemplate='Vânzare: %{y:,.0f} RON<extra></extra>'
+                ))
+                
+                fig_bar.update_layout(
+                    title=f"Grupe din {gestiune}",
+                    xaxis_title="Grupa",
+                    yaxis=dict(title="Stoc Final (RON)", side="left"),
+                    yaxis2=dict(title="Vânzare (RON)", side="right", overlaying="y"),
+                    height=400,
+                    barmode='group'
+                )
+                
+                st.plotly_chart(fig_bar, use_container_width=True)
+                
+                # Tabel pentru această gestiune
+                grupe_summary['Profit'] = grupe_summary['ValoareVanzare'] - grupe_summary['ValoareStocFinal']
+                grupe_summary = grupe_summary.sort_values('ValoareStocFinal', ascending=False)
+                st.dataframe(grupe_summary, use_container_width=True)
+        
+        st.markdown("---")
+        
+        # Analiză detaliată pe gestiuni
+        st.markdown("#### 📊 Sumar Gestiuni")
         gestiuni_summary = analiza_df.groupby('DenumireGest').agg({
             'ValoareStocFinal': 'sum',
             'ValoareVanzare': 'sum'
         }).reset_index()
-        gestiuni_summary.columns = ['Gestiune', 'Valoare Stoc Final', 'Valoare Vânzare']
+        gestiuni_summary['Profit Potențial'] = gestiuni_summary['ValoareVanzare'] - gestiuni_summary['ValoareStocFinal']
+        gestiuni_summary.columns = ['Gestiune', 'Valoare Stoc Final', 'Valoare Vânzare', 'Profit Potențial']
         gestiuni_summary = gestiuni_summary.sort_values('Valoare Stoc Final', ascending=False)
         
         st.dataframe(gestiuni_summary, use_container_width=True)
@@ -361,8 +375,8 @@ with tab3:
             st.metric("Valoare Top Stoc", f"{valoare_top_stoc:,.0f} RON")
         
         with col4:
-            valoare_top_vanzare = gestiuni_summary.iloc[0]['Valoare Vânzare']
-            st.metric("Valoare Top Vânzare", f"{valoare_top_vanzare:,.0f} RON")
+            profit_top = gestiuni_summary.iloc[0]['Profit Potențial']
+            st.metric("Profit Top", f"{profit_top:,.0f} RON")
     
     else:
         st.warning("Nu sunt disponibile datele necesare pentru analiza Sunburst. Verifică că fișierul conține coloanele: DenumireGest, Grupa, ValoareStocFinal, ValoareVanzare.")
