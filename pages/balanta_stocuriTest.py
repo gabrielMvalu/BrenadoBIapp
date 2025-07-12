@@ -231,7 +231,7 @@ with tab2:
             st.metric("Vechime Medie", f"{vechime_filtrata:.0f} zile")
 
 with tab3:
-    st.markdown("#### 🔍 Analize Stocuri - Vizualizare Ierarhică")
+    st.markdown("#### 🔍 Analize Stocuri - Treemap Ierarhic")
     
     # Încărcare date pentru analize
     analiza_df = load_balanta_la_data()
@@ -244,19 +244,13 @@ with tab3:
         
         # Metrici generale în partea de sus
         st.markdown("#### 📊 Totaluri Generale")
-        col1, col2, col3 = st.columns(3)
+        col1, col2 = st.columns(2)
         with col1:
             st.metric("Total Valoare Stoc Final", f"{total_valoare_stoc_general:,.0f} RON")
         with col2:
             st.metric("Total Valoare Vânzare", f"{total_valoare_vanzare_general:,.0f} RON")
-        with col3:
-            profit_potential = total_valoare_vanzare_general - total_valoare_stoc_general
-            st.metric("Profit Potențial", f"{profit_potential:,.0f} RON")
         
         st.markdown("---")
-        
-        # Opțiune 1: Treemap Ierarhic cu ambele valori
-        st.markdown("#### 🗺️ Treemap Ierarhic - Gestiuni → Grupe")
         
         # Preparare date pentru treemap
         treemap_data = analiza_df.groupby(['DenumireGest', 'Grupa']).agg({
@@ -264,97 +258,32 @@ with tab3:
             'ValoareVanzare': 'sum'
         }).reset_index()
         
-        treemap_data['Profit'] = treemap_data['ValoareVanzare'] - treemap_data['ValoareStocFinal']
-        treemap_data['Label'] = treemap_data['Grupa'] + '<br>' + treemap_data['DenumireGest']
-        
-        # Crearea Treemap
+        # Crearea Treemap cu ambele valori
         fig_treemap = px.treemap(
             treemap_data,
             path=[px.Constant("TOTAL"), 'DenumireGest', 'Grupa'],
             values='ValoareStocFinal',
-            color='Profit',
-            color_continuous_scale='RdYlGn',
-            title="Treemap: Mărime=Stoc Final, Culoare=Profit (Vânzare-Stoc)"
+            title="Treemap: Gestiuni → Grupe (Mărime = Stoc Final)"
         )
         
+        # Actualizare hover cu ambele valori
         fig_treemap.update_traces(
             hovertemplate='<b>%{label}</b><br>' +
                          'Stoc Final: %{value:,.0f} RON<br>' +
-                         'Vânzare: %{customdata[0]:,.0f} RON<br>' +
-                         'Profit: %{color:,.0f} RON<extra></extra>',
-            customdata=treemap_data[['ValoareVanzare']].values
+                         'Vânzare: %{customdata:,.0f} RON<extra></extra>',
+            customdata=treemap_data['ValoareVanzare'].values
         )
         
         fig_treemap.update_layout(height=600)
         st.plotly_chart(fig_treemap, use_container_width=True)
         
-        st.markdown("---")
-        
-        # Opțiune 2: Charts separate pentru fiecare gestiune
-        st.markdown("#### 📊 Analiză pe Gestiuni cu Grupe")
-        
-        gestiuni = analiza_df['DenumireGest'].unique()
-        
-        for gestiune in gestiuni:
-            gestiune_data = analiza_df[analiza_df['DenumireGest'] == gestiune]
-            grupe_summary = gestiune_data.groupby('Grupa').agg({
-                'ValoareStocFinal': 'sum',
-                'ValoareVanzare': 'sum'
-            }).reset_index()
-            
-            total_stoc_gestiune = grupe_summary['ValoareStocFinal'].sum()
-            total_vanzare_gestiune = grupe_summary['ValoareVanzare'].sum()
-            profit_gestiune = total_vanzare_gestiune - total_stoc_gestiune
-            
-            with st.expander(f"📦 {gestiune} - Stoc: {total_stoc_gestiune:,.0f} RON | Vânzare: {total_vanzare_gestiune:,.0f} RON | Profit: {profit_gestiune:,.0f} RON"):
-                
-                # Chart pentru grupe din această gestiune
-                fig_bar = go.Figure()
-                
-                fig_bar.add_trace(go.Bar(
-                    name='Stoc Final',
-                    x=grupe_summary['Grupa'],
-                    y=grupe_summary['ValoareStocFinal'],
-                    yaxis='y',
-                    marker_color='lightblue',
-                    hovertemplate='Stoc Final: %{y:,.0f} RON<extra></extra>'
-                ))
-                
-                fig_bar.add_trace(go.Bar(
-                    name='Vânzare',
-                    x=grupe_summary['Grupa'],
-                    y=grupe_summary['ValoareVanzare'],
-                    yaxis='y2',
-                    marker_color='orange',
-                    hovertemplate='Vânzare: %{y:,.0f} RON<extra></extra>'
-                ))
-                
-                fig_bar.update_layout(
-                    title=f"Grupe din {gestiune}",
-                    xaxis_title="Grupa",
-                    yaxis=dict(title="Stoc Final (RON)", side="left"),
-                    yaxis2=dict(title="Vânzare (RON)", side="right", overlaying="y"),
-                    height=400,
-                    barmode='group'
-                )
-                
-                st.plotly_chart(fig_bar, use_container_width=True)
-                
-                # Tabel pentru această gestiune
-                grupe_summary['Profit'] = grupe_summary['ValoareVanzare'] - grupe_summary['ValoareStocFinal']
-                grupe_summary = grupe_summary.sort_values('ValoareStocFinal', ascending=False)
-                st.dataframe(grupe_summary, use_container_width=True)
-        
-        st.markdown("---")
-        
-        # Analiză detaliată pe gestiuni
-        st.markdown("#### 📊 Sumar Gestiuni")
+        # Analiză detaliată pe gestiuni cu ambele valori
+        st.markdown("#### 📊 Analiză Detaliată pe Gestiuni")
         gestiuni_summary = analiza_df.groupby('DenumireGest').agg({
             'ValoareStocFinal': 'sum',
             'ValoareVanzare': 'sum'
         }).reset_index()
-        gestiuni_summary['Profit Potențial'] = gestiuni_summary['ValoareVanzare'] - gestiuni_summary['ValoareStocFinal']
-        gestiuni_summary.columns = ['Gestiune', 'Valoare Stoc Final', 'Valoare Vânzare', 'Profit Potențial']
+        gestiuni_summary.columns = ['Gestiune', 'Valoare Stoc Final', 'Valoare Vânzare']
         gestiuni_summary = gestiuni_summary.sort_values('Valoare Stoc Final', ascending=False)
         
         st.dataframe(gestiuni_summary, use_container_width=True)
@@ -375,8 +304,8 @@ with tab3:
             st.metric("Valoare Top Stoc", f"{valoare_top_stoc:,.0f} RON")
         
         with col4:
-            profit_top = gestiuni_summary.iloc[0]['Profit Potențial']
-            st.metric("Profit Top", f"{profit_top:,.0f} RON")
+            valoare_top_vanzare = gestiuni_summary.iloc[0]['Valoare Vânzare']
+            st.metric("Valoare Top Vânzare", f"{valoare_top_vanzare:,.0f} RON")
     
     else:
-        st.warning("Nu sunt disponibile datele necesare pentru analiza Sunburst. Verifică că fișierul conține coloanele: DenumireGest, Grupa, ValoareStocFinal, ValoareVanzare.")
+        st.warning("Nu sunt disponibile datele necesare pentru analiza Treemap. Verifică că fișierul conține coloanele: DenumireGest, Grupa, ValoareStocFinal, ValoareVanzare.")
