@@ -230,6 +230,12 @@ with tab2:
             vechime_filtrata = filtered_perioada['ZileVechime'].mean() if 'ZileVechime' in filtered_perioada.columns else 0
             st.metric("Vechime Medie", f"{vechime_filtrata:.0f} zile")
 
+
+
+
+
+
+
 with tab3:
     st.markdown("#### 🔍 Analize Stocuri - Treemap Ierarhic")
     
@@ -266,6 +272,47 @@ with tab3:
             'ValoareVanzare': 'sum'
         }).reset_index()
         
+        # Definire culori pentru gestiuni și gradiente pentru grupe
+        gestiuni_colors = {
+            gestiuni_data.iloc[0]['DenumireGest']: '#1f77b4',  # Albastru
+            gestiuni_data.iloc[1]['DenumireGest']: '#ff7f0e' if len(gestiuni_data) > 1 else '#1f77b4',  # Portocaliu
+            gestiuni_data.iloc[2]['DenumireGest']: '#2ca02c' if len(gestiuni_data) > 2 else '#1f77b4'   # Verde
+        }
+        
+        # Funcție pentru generarea culorilor
+        def generate_colors_with_gradients(gestiuni_data, grupe_data, gestiuni_colors):
+            colors = ['#8B4513']  # Maro pentru TOTAL
+            
+            # Culori pentru gestiuni
+            for _, gestiune in gestiuni_data.iterrows():
+                colors.append(gestiuni_colors[gestiune['DenumireGest']])
+            
+            # Culori gradient pentru grupe
+            import matplotlib.colors as mcolors
+            for _, gestiune in gestiuni_data.iterrows():
+                gestiune_name = gestiune['DenumireGest']
+                grupe_gestiune = grupe_data[grupe_data['DenumireGest'] == gestiune_name]
+                base_color = gestiuni_colors[gestiune_name]
+                
+                # Crearea gradientului pentru grupe
+                n_grupe = len(grupe_gestiune)
+                if n_grupe > 1:
+                    # Gradient de la culoarea de bază la o variantă mai deschisă
+                    base_rgb = mcolors.hex2color(base_color)
+                    for i in range(n_grupe):
+                        # Factor de gradient (0.4 la 1.0 pentru varietate)
+                        factor = 0.4 + (0.6 * i / (n_grupe - 1))
+                        gradient_rgb = tuple(min(1.0, c * factor + (1 - factor) * 0.9) for c in base_rgb)
+                        gradient_hex = mcolors.rgb2hex(gradient_rgb)
+                        colors.append(gradient_hex)
+                else:
+                    # O singură grupă, folosește o variantă mai deschisă
+                    base_rgb = mcolors.hex2color(base_color)
+                    gradient_rgb = tuple(min(1.0, c * 0.7 + 0.3) for c in base_rgb)
+                    colors.append(mcolors.rgb2hex(gradient_rgb))
+            
+            return colors
+        
         # Să facem două chart-uri paralele pentru claritate maximă
         col1, col2 = st.columns(2)
         
@@ -277,19 +324,25 @@ with tab3:
             parents_stoc = [""] + ["TOTAL"] * len(gestiuni_data) + list(grupe_data['DenumireGest'])
             values_stoc = [total_valoare_stoc_general] + list(gestiuni_data['ValoareStocFinal']) + list(grupe_data['ValoareStocFinal'])
             
+            # Generare culori cu gradient
+            colors_stoc = generate_colors_with_gradients(gestiuni_data, grupe_data, gestiuni_colors)
+            
             fig_stoc = go.Figure(go.Sunburst(
                 labels=labels_stoc,
                 parents=parents_stoc,
                 values=values_stoc,
                 branchvalues="total",
                 hovertemplate='<b>%{label}</b><br>Stoc Final: %{value:,.0f} RON<extra></extra>',
-                marker=dict(colors=['#2E86AB', '#1B998B', '#F18F01', '#C73E1D'] * 20)
+                textinfo="label+value",
+                texttemplate="<b>%{label}</b><br>%{value:,.0f} RON",
+                marker=dict(colors=colors_stoc, line=dict(color="white", width=2))
             ))
             
             fig_stoc.update_layout(
                 margin=dict(t=10, l=10, r=10, b=10),
                 height=500,
-                title="Distribuția Stoc Final"
+                title="Distribuția Stoc Final",
+                font_size=10
             )
             
             st.plotly_chart(fig_stoc, use_container_width=True)
@@ -302,19 +355,25 @@ with tab3:
             parents_vanzare = [""] + ["TOTAL"] * len(gestiuni_data) + list(grupe_data['DenumireGest'])
             values_vanzare = [total_valoare_vanzare_general] + list(gestiuni_data['ValoareVanzare']) + list(grupe_data['ValoareVanzare'])
             
+            # Același set de culori pentru consistență vizuală
+            colors_vanzare = generate_colors_with_gradients(gestiuni_data, grupe_data, gestiuni_colors)
+            
             fig_vanzare = go.Figure(go.Sunburst(
                 labels=labels_vanzare,
                 parents=parents_vanzare,
                 values=values_vanzare,
                 branchvalues="total",
                 hovertemplate='<b>%{label}</b><br>Vânzare: %{value:,.0f} RON<extra></extra>',
-                marker=dict(colors=['#A23B72', '#ED6A5A', '#9BC53D', '#592E83'] * 20)
+                textinfo="label+value", 
+                texttemplate="<b>%{label}</b><br>%{value:,.0f} RON",
+                marker=dict(colors=colors_vanzare, line=dict(color="white", width=2))
             ))
             
             fig_vanzare.update_layout(
                 margin=dict(t=10, l=10, r=10, b=10),
                 height=500,
-                title="Distribuția Valoare Vânzare"
+                title="Distribuția Valoare Vânzare",
+                font_size=10
             )
             
             st.plotly_chart(fig_vanzare, use_container_width=True)
