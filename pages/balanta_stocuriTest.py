@@ -176,27 +176,21 @@ with tab2:
     perioada_df = load_balanta_perioada()
     
     # Calculare metrici
-    total_stoc = perioada_df['Stoc final'].sum() if 'Stoc final' in perioada_df.columns else 0
-    valoare_intrare = perioada_df['Valoare intrare'].sum() if 'Valoare intrare' in perioada_df.columns else 0
-    numar_produse = len(perioada_df)
-    vechime_medie = perioada_df['ZileVechime'].mean() if 'ZileVechime' in perioada_df.columns else 0
+    total_valoare_intrare = perioada_df['Valoare intrare'].sum() if 'Valoare intrare' in perioada_df.columns else 0
+    total_pret_vanzare = perioada_df['peste 15 zile'].sum() if 'peste 15 zile' in perioada_df.columns else 0
     
     # Metrici principale
-    col1, col2, col3, col4 = st.columns(4)
+    col1, col2 = st.columns(2)
     
     with col1:
-        st.metric("Stoc Total", f"{total_stoc:,.0f} buc")
+        st.metric("Total Valoare Intrare", f"{total_valoare_intrare:,.0f} RON")
     with col2:
-        st.metric("Valoare Intrare", f"{valoare_intrare:,.0f} RON")
-    with col3:
-        st.metric("Produse", f"{numar_produse:,}")
-    with col4:
-        st.metric("Vechime Medie", f"{vechime_medie:.0f} zile")
+        st.metric("Total Pret Vanzare", f"{total_pret_vanzare:,.0f} RON")
     
     st.markdown("---")
     
     # Filtrare date
-    col1, col2 = st.columns(2)
+    col1, col2, col3, col4 = st.columns(4)
     with col1:
         if 'Denumire gestiune' in perioada_df.columns:
             gestiune_filter = st.multiselect(
@@ -215,6 +209,24 @@ with tab2:
                 key="produs_filter_tab2"
             )
     
+    with col3:
+        if 'Furnizor IN' in perioada_df.columns:
+            furnizor_filter = st.multiselect(
+                "Filtrează după furnizor:",
+                options=perioada_df['Furnizor IN'].unique(),
+                default=[],
+                key="furnizor_filter_tab2"
+            )
+    
+    with col4:
+        if 'Producator' in perioada_df.columns:
+            producator_filter = st.multiselect(
+                "Filtrează după producător:",
+                options=perioada_df['Producator'].unique(),
+                default=[],
+                key="producator_filter_tab2"
+            )
+    
     # Aplicare filtre
     filtered_perioada = perioada_df.copy()
     if 'Denumire gestiune' in perioada_df.columns and gestiune_filter:
@@ -223,27 +235,26 @@ with tab2:
     if 'Denumire' in perioada_df.columns and produs_filter:
         filtered_perioada = filtered_perioada[filtered_perioada['Denumire'].isin(produs_filter)]
     
+    if 'Furnizor IN' in perioada_df.columns and furnizor_filter:
+        filtered_perioada = filtered_perioada[filtered_perioada['Furnizor IN'].isin(furnizor_filter)]
+    
+    if 'Producator' in perioada_df.columns and producator_filter:
+        filtered_perioada = filtered_perioada[filtered_perioada['Producator'].isin(producator_filter)]
+    
     # Tabel cu date
     st.dataframe(filtered_perioada, use_container_width=True)
     
     # Statistici pentru datele filtrate
     if not filtered_perioada.empty:
         st.markdown("#### 📊 Statistici Date Filtrate")
-        col1, col2, col3, col4 = st.columns(4)
+        col1, col2 = st.columns(2)
         
         with col1:
-            stoc_filtrat = filtered_perioada['Stoc final'].sum() if 'Stoc final' in filtered_perioada.columns else 0
-            st.metric("Stoc Filtrat", f"{stoc_filtrat:,.0f} buc")
+            valoare_intrare_filtrata = filtered_perioada['Valoare intrare'].sum() if 'Valoare intrare' in filtered_perioada.columns else 0
+            st.metric("Total Valoare Intrare Filtrată", f"{valoare_intrare_filtrata:,.0f} RON")
         with col2:
-            valoare_filtrata = filtered_perioada['Valoare intrare'].sum() if 'Valoare intrare' in filtered_perioada.columns else 0
-            st.metric("Valoare Filtrată", f"{valoare_filtrata:,.0f} RON")
-        with col3:
-            produse_filtrate = len(filtered_perioada)
-            st.metric("Produse Filtrate", f"{produse_filtrate:,}")
-        with col4:
-            vechime_filtrata = filtered_perioada['ZileVechime'].mean() if 'ZileVechime' in filtered_perioada.columns else 0
-            st.metric("Vechime Medie", f"{vechime_filtrata:.0f} zile")
-
+            pret_vanzare_filtrat = filtered_perioada['peste 15 zile'].sum() if 'peste 15 zile' in filtered_perioada.columns else 0
+            st.metric("Total Pret Vanzare Filtrat", f"{pret_vanzare_filtrat:,.0f} RON")
 
 
 
