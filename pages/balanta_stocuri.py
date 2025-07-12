@@ -129,7 +129,7 @@ with tab1:
             
             # Adăugare text în centru cu totalul
             fig.add_annotation(
-                text=f"<b>Total Stoc<br>{total_stoc:,.2f} buc</b>",
+                text=f"<b>Total Stoc<br>{total_stoc:,.0f} buc</b>",
                 x=0.5, y=0.5,
                 font_size=16,
                 showarrow=False
