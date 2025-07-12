@@ -252,26 +252,58 @@ with tab3:
         
         st.markdown("---")
         
-        # Preparare date pentru treemap
-        treemap_data = analiza_df.groupby(['DenumireGest', 'Grupa']).agg({
+        # Preparare date pentru treemap - manual pentru toate nivelurile
+        import pandas as pd
+        
+        # Nivel 3: Grupe (cel mai detaliat)
+        grupe_data = analiza_df.groupby(['DenumireGest', 'Grupa']).agg({
             'ValoareStocFinal': 'sum',
             'ValoareVanzare': 'sum'
         }).reset_index()
+        grupe_data['nivel'] = 'grupa'
+        grupe_data['id'] = grupe_data['DenumireGest'] + ' - ' + grupe_data['Grupa']
+        grupe_data['parent'] = grupe_data['DenumireGest']
         
-        # Crearea Treemap cu ambele valori
-        fig_treemap = px.treemap(
-            treemap_data,
-            path=[px.Constant("TOTAL"), 'DenumireGest', 'Grupa'],
-            values='ValoareStocFinal',
-            title="Treemap: Gestiuni → Grupe (Mărime = Stoc Final)"
-        )
+        # Nivel 2: Gestiuni
+        gestiuni_data = analiza_df.groupby('DenumireGest').agg({
+            'ValoareStocFinal': 'sum',
+            'ValoareVanzare': 'sum'
+        }).reset_index()
+        gestiuni_data['nivel'] = 'gestiune'
+        gestiuni_data['id'] = gestiuni_data['DenumireGest']
+        gestiuni_data['parent'] = 'TOTAL'
+        gestiuni_data['Grupa'] = ''
         
-        # Actualizare hover cu ambele valori
-        fig_treemap.update_traces(
+        # Nivel 1: Total
+        total_data = pd.DataFrame([{
+            'DenumireGest': 'TOTAL',
+            'Grupa': '',
+            'ValoareStocFinal': analiza_df['ValoareStocFinal'].sum(),
+            'ValoareVanzare': analiza_df['ValoareVanzare'].sum(),
+            'nivel': 'total',
+            'id': 'TOTAL',
+            'parent': ''
+        }])
+        
+        # Combinarea datelor pentru treemap manual
+        all_data = pd.concat([total_data, gestiuni_data, grupe_data], ignore_index=True)
+        
+        # Crearea Treemap cu go.Figure pentru control complet
+        fig_treemap = go.Figure(go.Treemap(
+            labels=all_data['id'],
+            parents=all_data['parent'],
+            values=all_data['ValoareStocFinal'],
+            customdata=all_data['ValoareVanzare'],
             hovertemplate='<b>%{label}</b><br>' +
                          'Stoc Final: %{value:,.0f} RON<br>' +
                          'Vânzare: %{customdata:,.0f} RON<extra></extra>',
-            customdata=treemap_data['ValoareVanzare'].values
+            textinfo="label+value",
+            texttemplate='<b>%{label}</b><br>%{value:,.0f} RON'
+        ))
+        
+        fig_treemap.update_layout(
+            title="Treemap: Gestiuni → Grupe (Mărime = Stoc Final)",
+            height=600
         )
         
         fig_treemap.update_layout(height=600)
