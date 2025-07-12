@@ -310,25 +310,26 @@ with tab3:
             maxdepth=2
         ))
         
-re_general:,.0f} RON",
+        # Configurare layout cu annotation transparent în centru
+        fig.update_layout(
+            title="Analiză Combinată - Stoc Final vs Vânzare<br>Gestiune → Grupa",
+            title_x=0.5,
+            height=650,
+            font_size=12,
+            margin=dict(t=100, b=20, r=20, l=20),
+            annotations=[
+                dict(
+                    text=f"<b>TOTALURI</b><br>Stoc Final: {total_valoare_stoc_general:,.0f} RON<br>Vânzare: {total_valoare_vanzare_general:,.0f} RON",
                     x=0.5, y=0.5,
-                    font_size=14,
+                    font_size=12,
                     showarrow=False,
-                    bgcolor="rgba(255,255,255,0.8)",
-                    bordercolor="gray",
-                    borderwidth=1
+                    bgcolor="rgba(255,255,255,0.9)",
+                    bordercolor="rgba(128,128,128,0.5)",
+                    borderwidth=1,
+                    clicktoshow="onout"
                 )
             ]
         )
-        
-        # JavaScript pentru actualizarea annotation-ului la click
-        fig.add_trace(go.Scatter(
-            x=[None], y=[None],
-            mode='markers',
-            marker=dict(size=0),
-            showlegend=False,
-            hoverinfo='skip'
-        ))
         
         # Afișare grafic
         st.plotly_chart(fig, use_container_width=True)
