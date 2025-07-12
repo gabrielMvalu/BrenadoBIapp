@@ -12,7 +12,7 @@ from utils.data_loaders import load_balanta_la_data, load_balanta_perioada
 st.markdown("### 📦 Balanță Stocuri")
 
 # Tabs pentru subcategoriile Balanță Stocuri
-tab1, tab2, tab3 = st.tabs(["📅 În Dată", "📊 Perioadă", "🔍 Analize Stocuri"])  
+tab1, tab2, tab3 = st.tabs(["📅 În Dată", "📊 Perioadă", "🔍 Analize Stocuri"])
 
 with tab1:
     st.markdown("#### 📅 Balanță Stocuri la Dată")
@@ -260,15 +260,19 @@ with tab3:
             df_list = []
             for i, level in enumerate(levels):
                 df_tree = pd.DataFrame(columns=['id', 'parent', 'value', 'color'])
-                dfg = df.groupby(levels[i:]).sum()
-                dfg = dfg.reset_index()
+                # Grupare și sumă DOAR pe coloanele specificate
+                dfg = df.groupby(levels[i:])[value_column].sum().reset_index()
+                if color_column != value_column:
+                    color_data = df.groupby(levels[i:])[color_column].sum().reset_index()
+                    dfg = dfg.merge(color_data, on=levels[i:])
+                
                 df_tree['id'] = dfg[level].copy()
                 if i < len(levels) - 1:
                     df_tree['parent'] = dfg[levels[i+1]].copy()
                 else:
                     df_tree['parent'] = 'total'
                 df_tree['value'] = dfg[value_column]
-                df_tree['color'] = dfg[color_column]
+                df_tree['color'] = dfg[color_column] if color_column in dfg.columns else dfg[value_column]
                 df_list.append(df_tree)
             
             # Adăugarea root-ului
