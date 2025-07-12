@@ -10,7 +10,7 @@ from utils.data_loaders import load_balanta_la_data, load_balanta_perioada
 st.markdown("### 📦 Balanță Stocuri")
 
 # Tabs pentru subcategoriile Balanță Stocuri
-tab1, tab2 = st.tabs(["📅 În Data", "📊 Perioadă"])
+tab1, tab2 = st.tabs(["📅 La Data", "📊 Perioadă"])
 
 with tab1:
     st.markdown("#### 📅 Balanță Stocuri la Data")
@@ -71,20 +71,6 @@ with tab1:
     
     if 'Denumire' in balanta_df.columns and produs_filter:
         filtered_balanta = filtered_balanta[filtered_balanta['Denumire'].isin(produs_filter)]
-    
-    # Afișare total pentru grupa filtrată (doar când filtrul grupa este aplicat)
-    if 'Grupa' in balanta_df.columns and grupa_filter:
-        st.markdown("#### 💰 Total pentru Grupa Filtrată")
-        grupa_valoare_stoc = filtered_balanta['ValoareStocFinal'].sum() if 'ValoareStocFinal' in filtered_balanta.columns else 0
-        grupa_valoare_vanzare = filtered_balanta['ValoareVanzare'].sum() if 'ValoareVanzare' in filtered_balanta.columns else 0
-        
-        col_grupa1, col_grupa2 = st.columns(2)
-        with col_grupa1:
-            st.metric("Total Grupa - Valoare Stoc Final", f"{grupa_valoare_stoc:,.0f} RON")
-        with col_grupa2:
-            st.metric("Total Grupa - Valoare Vânzare", f"{grupa_valoare_vanzare:,.0f} RON")
-        
-        st.markdown("---")
     
     # Tabel cu date
     st.dataframe(filtered_balanta, use_container_width=True)
