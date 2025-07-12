@@ -91,6 +91,8 @@ with tab1:
     
     # Tabel cu date
     st.dataframe(filtered_balanta, use_container_width=True)
+
+
     
     # Statistici pentru datele filtrate (doar când s-au aplicat filtre)
     if not filtered_balanta.empty and (gestiune_filter or grupa_filter or produs_filter):
@@ -116,20 +118,29 @@ with tab1:
             # Calculare total pentru centru
             total_stoc = stoc_pe_gestiune['Stoc final'].sum()
             
+            # Extragerea unității de măsură pentru produsul selectat
+            if 'UM' in filtered_balanta.columns:
+                um_produs = filtered_balanta['UM'].iloc[0] if not filtered_balanta.empty else "unități"
+            else:
+                um_produs = "unități"
+            
+            # Numele produsului pentru label central
+            nume_produs = produs_filter[0] if len(produs_filter) == 1 else "Produse Selectate"
+            
             # Crearea donut chart-ului
             fig = go.Figure(data=[go.Pie(
                 labels=stoc_pe_gestiune['DenumireGest'],
                 values=stoc_pe_gestiune['Stoc final'],
                 hole=0.4,  # Crează gaura din mijloc pentru donut
                 textinfo='label+value',
-                texttemplate='%{label}<br>%{value} buc',
+                texttemplate=f'%{{label}}<br>%{{value}} {um_produs}',
                 textposition='outside',
-                hovertemplate='<b>%{label}</b><br>Stoc: %{value} buc<extra></extra>'
+                hovertemplate=f'<b>%{{label}}</b><br>Stoc: %{{value}} {um_produs}<extra></extra>'
             )])
             
-            # Adăugare text în centru cu totalul
+            # Adăugare text în centru cu totalul - DINAMIC
             fig.add_annotation(
-                text=f"<b>Total Stoc<br>{total_stoc:,.0f} buc</b>",
+                text=f"<b>Stoc {nume_produs}<br>{total_stoc:,.0f} {um_produs}</b>",
                 x=0.5, y=0.5,
                 font_size=16,
                 showarrow=False
@@ -137,7 +148,7 @@ with tab1:
             
             # Configurare layout
             fig.update_layout(
-                title="Distribuția Stocului Final pe Gestiuni",
+                title=f"Distribuția Stocului: {nume_produs} ({um_produs})",
                 title_x=0.5,
                 height=500,
                 showlegend=True,
@@ -154,6 +165,9 @@ with tab1:
             st.plotly_chart(fig, use_container_width=True)
         else:
             st.info("Nu există date de stoc pentru produsele filtrate.")
+
+
+
 
 with tab2:
     st.markdown("#### 📊 Balanță Stocuri pe Perioadă")
