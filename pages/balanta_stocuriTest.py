@@ -351,24 +351,27 @@ with tab3:
             'ValoareVanzare': 'sum'
         }).reset_index()
         
+        # Păstrăm valorile numerice pentru metrici
+        gestiuni_summary_numeric = gestiuni_summary.copy()
+        
         # Rotunjirea valorilor pentru afișare
         gestiuni_summary['ValoareStocFinal'] = gestiuni_summary['ValoareStocFinal'].round(0).astype(int)
         gestiuni_summary['ValoareVanzare'] = gestiuni_summary['ValoareVanzare'].round(0).astype(int)
         
         # Sortarea înainte de formatare (pe valori numerice)
         gestiuni_summary = gestiuni_summary.sort_values('ValoareStocFinal', ascending=False)
+        gestiuni_summary_numeric = gestiuni_summary_numeric.sort_values('ValoareStocFinal', ascending=False)
         
-        # Formatarea cu separatoare de mii după sortare
-        gestiuni_summary['ValoareStocFinal'] = gestiuni_summary['ValoareStocFinal'].apply(lambda x: f"{x:,}")
-        gestiuni_summary['ValoareVanzare'] = gestiuni_summary['ValoareVanzare'].apply(lambda x: f"{x:,}")
+        # Formatarea cu separatoare de mii după sortare DOAR pentru DataFrame afișat
+        gestiuni_summary_display = gestiuni_summary.copy()
+        gestiuni_summary_display['ValoareStocFinal'] = gestiuni_summary_display['ValoareStocFinal'].apply(lambda x: f"{x:,}")
+        gestiuni_summary_display['ValoareVanzare'] = gestiuni_summary_display['ValoareVanzare'].apply(lambda x: f"{x:,}")
         
-        gestiuni_summary.columns = ['Gestiune', 'Valoare Stoc Final', 'Valoare Vânzare']
-
-
+        gestiuni_summary_display.columns = ['Gestiune', 'Valoare Stoc Final', 'Valoare Vânzare']
         
-        st.dataframe(gestiuni_summary, use_container_width=True)
+        st.dataframe(gestiuni_summary_display, use_container_width=True)
         
-        # Metrici sumare
+        # Metrici sumare - folosind valorile numerice
         col1, col2, col3, col4 = st.columns(4)
         
         with col1:
@@ -376,15 +379,15 @@ with tab3:
             st.metric("Gestiuni", f"{nr_gestiuni}")
         
         with col2:
-            gestiune_top = gestiuni_summary.iloc[0]['Gestiune']
+            gestiune_top = gestiuni_summary_numeric.iloc[0]['DenumireGest']
             st.metric("Top Gestiune", gestiune_top)
         
         with col3:
-            valoare_top_stoc = gestiuni_summary.iloc[0]['Valoare Stoc Final']
+            valoare_top_stoc = gestiuni_summary_numeric.iloc[0]['ValoareStocFinal']
             st.metric("Valoare Top Stoc", f"{valoare_top_stoc:,.0f} RON")
         
         with col4:
-            valoare_top_vanzare = gestiuni_summary.iloc[0]['Valoare Vânzare']
+            valoare_top_vanzare = gestiuni_summary_numeric.iloc[0]['ValoareVanzare']
             st.metric("Valoare Top Vânzare", f"{valoare_top_vanzare:,.0f} RON")
     
     else:
