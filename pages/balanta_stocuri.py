@@ -4,6 +4,8 @@ Conține 2 subcategorii: La Dată și În Perioadă
 """
 
 import streamlit as st
+import plotly.express as px
+import plotly.graph_objects as go
 from utils.data_loaders import load_balanta_la_data, load_balanta_perioada
 
 # Titlu pagină
@@ -90,7 +92,7 @@ with tab1:
     # Tabel cu date
     st.dataframe(filtered_balanta, use_container_width=True)
     
-   # Statistici pentru datele filtrate (doar când s-au aplicat filtre)
+    # Statistici pentru datele filtrate (doar când s-au aplicat filtre)
     if not filtered_balanta.empty and (gestiune_filter or grupa_filter or produs_filter):
         st.markdown("#### 📊 Statistici Date Filtrate")
         col1, col2 = st.columns(2)
@@ -101,6 +103,61 @@ with tab1:
         with col2:
             valoare_vanzare_filtrata = filtered_balanta['ValoareVanzare'].sum() if 'ValoareVanzare' in filtered_balanta.columns else 0
             st.metric("Total Valoare Vânzare Filtrată", f"{valoare_vanzare_filtrata:,.0f} RON")
+
+
+    
+    # Donut Chart pentru stocuri pe gestiuni (doar când se filtrează după produs)
+    if produs_filter and 'Stoc final' in filtered_balanta.columns and 'DenumireGest' in filtered_balanta.columns:
+        st.markdown("#### 📊 Distribuția Stocului pe Gestiuni")
+        
+        # Grupare după gestiune și sumarea stocurilor
+        stoc_pe_gestiune = filtered_balanta.groupby('DenumireGest')['Stoc final'].sum().reset_index()
+        stoc_pe_gestiune = stoc_pe_gestiune[stoc_pe_gestiune['Stoc final'] > 0]  # Doar gestiunile cu stoc
+        
+        if not stoc_pe_gestiune.empty:
+            # Calculare total pentru centru
+            total_stoc = stoc_pe_gestiune['Stoc final'].sum()
+            
+            # Crearea donut chart-ului
+            fig = go.Figure(data=[go.Pie(
+                labels=stoc_pe_gestiune['DenumireGest'],
+                values=stoc_pe_gestiune['Stoc final'],
+                hole=0.4,  # Crează gaura din mijloc pentru donut
+                textinfo='label+percent',
+                textposition='outside',
+                hovertemplate='<b>%{label}</b><br>Stoc: %{value} buc<br>Procent: %{percent}<extra></extra>'
+            )])
+            
+            # Adăugare text în centru cu totalul
+            fig.add_annotation(
+                text=f"<b>Total Stoc<br>{total_stoc:,.0f} buc</b>",
+                x=0.5, y=0.5,
+                font_size=16,
+                showarrow=False
+            )
+            
+            # Configurare layout
+            fig.update_layout(
+                title="Distribuția Stocului Final pe Gestiuni",
+                title_x=0.5,
+                height=500,
+                showlegend=True,
+                legend=dict(
+                    orientation="v",
+                    yanchor="middle",
+                    y=0.5,
+                    xanchor="left",
+                    x=1.05
+                )
+            )
+            
+            # Afișare grafic
+            st.plotly_chart(fig, use_container_width=True)
+        else:
+            st.info("Nu există date de stoc pentru produsele filtrate.")
+
+
+
 
 
 with tab2:
