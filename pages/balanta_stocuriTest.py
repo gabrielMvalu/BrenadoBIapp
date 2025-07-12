@@ -12,8 +12,7 @@ from utils.data_loaders import load_balanta_la_data, load_balanta_perioada
 st.markdown("### 📦 Balanță Stocuri")
 
 # Tabs pentru subcategoriile Balanță Stocuri
-# Tabs pentru subcategoriile Balanță Stocuri
-tab1, tab2, tab3 = st.tabs(["📅 În Dată", "📊 Perioadă", "🔍 Analize Stocuri"]) 
+tab1, tab2, tab3 = st.tabs(["📅 În Dată", "📊 Perioadă", "🔍 Analize Stocuri"])  
 
 with tab1:
     st.markdown("#### 📅 Balanță Stocuri la Dată")
