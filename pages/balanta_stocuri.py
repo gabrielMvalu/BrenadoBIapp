@@ -10,10 +10,10 @@ from utils.data_loaders import load_balanta_la_data, load_balanta_perioada
 st.markdown("### 📦 Balanță Stocuri")
 
 # Tabs pentru subcategoriile Balanță Stocuri
-tab1, tab2 = st.tabs(["📅 În Data", "📊 Perioadă"])
+tab1, tab2 = st.tabs(["📅 În Dată", "📊 Perioadă"])
 
 with tab1:
-    st.markdown("#### 📅 Balanță Stocuri la Data")
+    st.markdown("#### 📅 Balanță Stocuri la Dată")
     
     # Încărcare date
     balanta_df = load_balanta_la_data()
@@ -26,9 +26,9 @@ with tab1:
     col1, col2 = st.columns(2)
     
     with col1:
-        st.metric("Total Valoare Vânzare", f"{total_valoare_vanzare:,.0f} RON")
-    with col2:
         st.metric("Total Valoare Stoc Final", f"{total_valoare_stoc_final:,.0f} RON")
+    with col2:
+        st.metric("Total Valoare Vânzare", f"{total_valoare_vanzare:,.0f} RON")
     
     st.markdown("---")
     
@@ -69,11 +69,11 @@ with tab1:
         col1, col2 = st.columns(2)
         
         with col1:
-            valoare_vanzare_filtrata = filtered_balanta['ValoareVanzare'].sum() if 'ValoareVanzare' in filtered_balanta.columns else 0
-            st.metric("Total Valoare Vânzare Filtrată", f"{valoare_vanzare_filtrata:,.0f} RON")
-        with col2:
             valoare_stoc_filtrata = filtered_balanta['ValoareStocFinal'].sum() if 'ValoareStocFinal' in filtered_balanta.columns else 0
             st.metric("Total Valoare Stoc Final Filtrată", f"{valoare_stoc_filtrata:,.0f} RON")
+        with col2:
+            valoare_vanzare_filtrata = filtered_balanta['ValoareVanzare'].sum() if 'ValoareVanzare' in filtered_balanta.columns else 0
+            st.metric("Total Valoare Vânzare Filtrată", f"{valoare_vanzare_filtrata:,.0f} RON")
 
 with tab2:
     st.markdown("#### 📊 Balanță Stocuri pe Perioadă")
