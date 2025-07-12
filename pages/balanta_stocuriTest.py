@@ -252,19 +252,18 @@ with tab3:
         
         st.markdown("---")
         
-        # Funcție pentru construirea datelor ierarhice
-        def build_hierarchical_dataframe(df, levels, value_column, color_column):
-            """Construiește ierarhia pentru Sunburst chart"""
+        # Funcție pentru construirea datelor ierarhice cu ambele valori
+        def build_hierarchical_dataframe_dual(df, levels, value_column, color_column):
+            """Construiește ierarhia pentru Sunburst chart cu 2 valori"""
             import pandas as pd
             
             df_list = []
             for i, level in enumerate(levels):
                 df_tree = pd.DataFrame(columns=['id', 'parent', 'value', 'color'])
-                # Grupare și sumă DOAR pe coloanele specificate
-                dfg = df.groupby(levels[i:])[value_column].sum().reset_index()
-                if color_column != value_column:
-                    color_data = df.groupby(levels[i:])[color_column].sum().reset_index()
-                    dfg = dfg.merge(color_data, on=levels[i:])
+                # Grupare și sumă pentru ambele coloane
+                dfg_value = df.groupby(levels[i:])[value_column].sum().reset_index()
+                dfg_color = df.groupby(levels[i:])[color_column].sum().reset_index()
+                dfg = dfg_value.merge(dfg_color, on=levels[i:])
                 
                 df_tree['id'] = dfg[level].copy()
                 if i < len(levels) - 1:
@@ -272,10 +271,10 @@ with tab3:
                 else:
                     df_tree['parent'] = 'total'
                 df_tree['value'] = dfg[value_column]
-                df_tree['color'] = dfg[color_column] if color_column in dfg.columns else dfg[value_column]
+                df_tree['color'] = dfg[color_column]
                 df_list.append(df_tree)
             
-            # Adăugarea root-ului
+            # Adăugarea root-ului cu ambele valori
             total = pd.Series(dict(
                 id='total', 
                 parent='',
@@ -286,27 +285,18 @@ with tab3:
             df_all_trees = pd.concat(df_list, ignore_index=True)
             return df_all_trees
         
-        # Selectare tipul de analiză
-        col1, col2 = st.columns(2)
-        with col1:
-            tip_analiza = st.selectbox(
-                "Selectează tipul de analiză:",
-                ["Valoare Stoc Final", "Valoare Vânzare"],
-                key="tip_analiza_sunburst"
-            )
-        
-        # Determinare coloanele
-        value_column = 'ValoareStocFinal' if tip_analiza == "Valoare Stoc Final" else 'ValoareVanzare'
-        color_column = value_column  # Folosim aceeași coloană pentru culoare
+        # Construire date ierarhice cu ambele valori
         levels = ['Grupa', 'DenumireGest']  # De la mic la mare
+        value_column = 'ValoareStocFinal'   # Pentru mărimea segmentelor
+        color_column = 'ValoareVanzare'     # Pentru culoarea segmentelor
         
         # Construire date ierarhice
-        df_hierarchical = build_hierarchical_dataframe(analiza_df, levels, value_column, color_column)
+        df_hierarchical = build_hierarchical_dataframe_dual(analiza_df, levels, value_column, color_column)
         
         # Calculare valoare medie pentru colorscale
-        average_value = analiza_df[value_column].mean()
+        average_color = analiza_df[color_column].mean()
         
-        # Crearea Sunburst chart-ului
+        # Crearea Sunburst chart-ului cu ambele valori
         fig = go.Figure(go.Sunburst(
             labels=df_hierarchical['id'],
             parents=df_hierarchical['parent'],
@@ -315,20 +305,35 @@ with tab3:
             marker=dict(
                 colors=df_hierarchical['color'],
                 colorscale='RdYlBu',
-                cmid=average_value,
-                colorbar=dict(title=f"{tip_analiza} (RON)")
+                cmid=average_color,
+                colorbar=dict(title="Valoare Vânzare (RON)")
             ),
-            hovertemplate='<b>%{label}</b><br>Valoare: %{value:,.0f} RON<extra></extra>',
-            maxdepth=2  # Limitează la 2 nivele pentru performanță
+            hovertemplate='<b>%{label}</b><br>' +
+                         'Valoare Stoc Final: %{value:,.0f} RON<br>' +
+                         'Valoare Vânzare: %{color:,.0f} RON<extra></extra>',
+            maxdepth=2
         ))
+        
+        # Adăugare annotation în centru cu ambele totaluri
+        fig.add_annotation(
+            text=f"<b>TOTALURI</b><br>" +
+                 f"Stoc Final: {total_valoare_stoc_general:,.0f} RON<br>" +
+                 f"Vânzare: {total_valoare_vanzare_general:,.0f} RON",
+            x=0.5, y=0.5,
+            font_size=14,
+            showarrow=False,
+            bgcolor="white",
+            bordercolor="gray",
+            borderwidth=1
+        )
         
         # Configurare layout
         fig.update_layout(
-            title=f"Analiză Ierarhică - {tip_analiza}<br>Gestiune → Grupa",
+            title="Analiză Combinată - Stoc Final (mărime) vs Vânzare (culoare)<br>Gestiune → Grupa",
             title_x=0.5,
-            height=600,
+            height=650,
             font_size=12,
-            margin=dict(t=80, b=20, r=20, l=20)
+            margin=dict(t=100, b=20, r=120, l=20)
         )
         
         # Afișare grafic
@@ -336,12 +341,14 @@ with tab3:
         
         # Instrucțiuni pentru utilizare
         st.info("💡 **Cum să folosești graficul:**\n"
+                "• **Mărimea segmentelor** = Valoare Stoc Final\n"
+                "• **Culoarea segmentelor** = Valoare Vânzare (roșu = mică, albastru = mare)\n"
                 "• **Click pe gestiune** pentru a vedea grupele din acea gestiune\n"
                 "• **Click pe centru** pentru a reveni la vizualizarea generală\n"
-                "• **Culorile** indică valorile relative (roșu = valori mici, albastru = valori mari)")
+                "• **Hover** pentru a vedea ambele valori")
         
-        # Analiză detaliată pe gestiuni
-        st.markdown("#### 📊 Analiză pe Gestiuni")
+        # Analiză detaliată pe gestiuni cu ambele valori
+        st.markdown("#### 📊 Analiză Detaliată pe Gestiuni")
         gestiuni_summary = analiza_df.groupby('DenumireGest').agg({
             'ValoareStocFinal': 'sum',
             'ValoareVanzare': 'sum',
@@ -368,8 +375,8 @@ with tab3:
             st.metric("Top Gestiune", gestiune_top)
         
         with col4:
-            valoare_top = gestiuni_summary.iloc[0][tip_analiza.replace(' ', '')]
-            st.metric(f"Valoare Top", f"{valoare_top:,.0f} RON")
+            valoare_top_stoc = gestiuni_summary.iloc[0]['Valoare Stoc Final']
+            st.metric("Valoare Top Stoc", f"{valoare_top_stoc:,.0f} RON")
     
     else:
         st.warning("Nu sunt disponibile datele necesare pentru analiza Sunburst. Verifică că fișierul conține coloanele: DenumireGest, Grupa, ValoareStocFinal, ValoareVanzare.")
