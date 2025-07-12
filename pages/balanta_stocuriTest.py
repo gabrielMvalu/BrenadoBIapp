@@ -355,8 +355,16 @@ with tab3:
         gestiuni_summary['ValoareStocFinal'] = gestiuni_summary['ValoareStocFinal'].round(0).astype(int)
         gestiuni_summary['ValoareVanzare'] = gestiuni_summary['ValoareVanzare'].round(0).astype(int)
         
+        # Sortarea înainte de formatare (pe valori numerice)
+        gestiuni_summary = gestiuni_summary.sort_values('ValoareStocFinal', ascending=False)
+        
+        # Formatarea cu separatoare de mii după sortare
+        gestiuni_summary['ValoareStocFinal'] = gestiuni_summary['ValoareStocFinal'].apply(lambda x: f"{x:,}")
+        gestiuni_summary['ValoareVanzare'] = gestiuni_summary['ValoareVanzare'].apply(lambda x: f"{x:,}")
+        
         gestiuni_summary.columns = ['Gestiune', 'Valoare Stoc Final', 'Valoare Vânzare']
-        gestiuni_summary = gestiuni_summary.sort_values('Valoare Stoc Final', ascending=False)
+
+
         
         st.dataframe(gestiuni_summary, use_container_width=True)
         
