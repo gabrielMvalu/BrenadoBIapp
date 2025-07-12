@@ -237,24 +237,24 @@ with tab2:
 
 
 with tab3:
-    st.markdown("#### 🔍 Analize Stocuri - Treemap Ierarhic")
+    st.markdown("#### 🔍 Analize Stocuri ")
     
-    # Încărcare date pentru analize
-    analiza_df = load_balanta_la_data()
+    # Folosim datele și totalurile deja calculate în tab1
+    analiza_df = balanta_df.copy()  # Folosim aceleași date
     
     if not analiza_df.empty and all(col in analiza_df.columns for col in ['DenumireGest', 'Grupa', 'ValoareStocFinal', 'ValoareVanzare']):
         
-        # Calculare totaluri generale
-        total_valoare_stoc_general = analiza_df['ValoareStocFinal'].sum()
-        total_valoare_vanzare_general = analiza_df['ValoareVanzare'].sum()
+        # Folosim totalurile deja calculate în tab1
+        # total_valoare_stoc_general = total_valoare_stoc_final (din tab1)
+        # total_valoare_vanzare_general = total_valoare_vanzare (din tab1)
         
-        # Metrici generale în partea de sus
+        # Metrici generale în partea de sus (folosind valorile din tab1)
         st.markdown("#### 📊 Totaluri Generale")
         col1, col2 = st.columns(2)
         with col1:
-            st.metric("Total Valoare Stoc Final", f"{total_valoare_stoc_general:,.0f} RON")
+            st.metric("Total Valoare Stoc Final", f"{total_valoare_stoc_final:,.0f} RON")
         with col2:
-            st.metric("Total Valoare Vânzare", f"{total_valoare_vanzare_general:,.0f} RON")
+            st.metric("Total Valoare Vânzare", f"{total_valoare_vanzare:,.0f} RON")
         
         st.markdown("---")
         
@@ -299,13 +299,13 @@ with tab3:
                 'niveau': 'gestiune'
             })
         
-        # Total - root
+        # Total - root (folosind totalurile din tab1)
         treemap_data.append({
             'ids': 'Brenado For House',
             'labels': 'Brenado For House',
             'parents': '',
-            'values': total_valoare_stoc_general,
-            'vanzare': total_valoare_vanzare_general,
+            'values': total_valoare_stoc_final,  # Din tab1
+            'vanzare': total_valoare_vanzare,    # Din tab1
             'niveau': 'total'
         })
         
@@ -322,7 +322,7 @@ with tab3:
             branchvalues="total",
             maxdepth=3,
             textinfo="label+value",
-            texttemplate="<b>%{label}</b><br>Stoc: %{value:,.0f}<br>Vânzare: %{customdata:,.0f}",
+            texttemplate="<b>%{label}</b><br>Total_Stoc: %{value:,.0f}<br>Total_Vânzare: %{customdata:,.0f}",
             hovertemplate='<b>%{label}</b><br>' +
                          'Stoc Final: %{value:,.0f} RON<br>' +
                          'Vânzare: %{customdata:,.0f} RON<extra></extra>',
@@ -343,11 +343,7 @@ with tab3:
         )
         
         st.plotly_chart(fig, use_container_width=True)
-        
-        # Informații suplimentare despre navigare
-        st.info("💡 **Navigare:** Click pe gestiune pentru a vedea grupele din acea gestiune. " +
-               "Click pe 'Brenado For House' din bara de sus pentru a reveni la vizualizarea generală.")
-        
+
         # Analiză detaliată pe gestiuni cu ambele valori
         st.markdown("#### 📊 Analiză Detaliată pe Gestiuni")
         gestiuni_summary = analiza_df.groupby('DenumireGest').agg({
