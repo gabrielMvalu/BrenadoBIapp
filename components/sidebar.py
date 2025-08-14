@@ -50,7 +50,7 @@ Componente pentru filtrele comune în aplicația Brenado For House
 
 import streamlit as st
 import pandas as pd
-from src.config.settings import FILTER_DEFAULTS
+from config.settings import FILTER_DEFAULTS
 
 def render_multiselect_filter(label, options, key, default=None):
     """
